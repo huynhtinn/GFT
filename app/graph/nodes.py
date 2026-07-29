@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, Any
 from app.graph.state import SupportState, PipelineLog, GroundingCitation, ContextPackage
 from app.services.qdrant_service import qdrant_kb
+from app.services.llm_service import groq_llm
 
 def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
     """Node 1: Kiểm tra Spam & Trùng lặp."""
@@ -86,6 +87,12 @@ def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
     }
 
 
+from app.prompts import (
+    build_auto_reply_messages,
+    build_human_draft_messages,
+    build_clarification_question
+)
+
 def slot_completeness_inspector_node(state: SupportState) -> Dict[str, Any]:
     """Node 3: Kiểm tra thông tin bắt buộc & sinh Clarification Loop."""
     now = datetime.now().isoformat()
@@ -95,13 +102,7 @@ def slot_completeness_inspector_node(state: SupportState) -> Dict[str, Any]:
 
     if category == "incomplete":
         missing_slots = ["API Key 4 ký tự cuối", "Địa chỉ IP Client kết nối"]
-        clarification_question = (
-            f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
-            "Để hỗ trợ kiểm tra nguyên nhân lỗi 403 Forbidden, quý khách vui lòng cung cấp giúp em:\n"
-            "1. 4 ký tự cuối của API Key đang sử dụng\n"
-            "2. Địa chỉ IP Client thực hiện kết nối\n\n"
-            "Xin cảm ơn quý khách!"
-        )
+        clarification_question = build_clarification_question(state.get('customer_name', 'quý khách'))
 
         logs.append({
             "stepId": "step_3",
@@ -131,6 +132,9 @@ def slot_completeness_inspector_node(state: SupportState) -> Dict[str, Any]:
     return {"pipeline_logs": logs}
 
 
+
+from app.config.settings import settings
+
 def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
     """Node 4: Thực hiện Qdrant Vector DB Retrieval & Grounding Citations."""
     now = datetime.now().isoformat()
@@ -139,10 +143,11 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
     query = f"{state.get('subject', '')} {state.get('content', '')}"
     
     # Query Qdrant Vector Collection
-    citations = qdrant_kb.search_relevant_chunks(query, limit=3)
+    citations = qdrant_kb.search_relevant_chunks(query, limit=settings.RAG_SEARCH_LIMIT)
     
     best_score = max([c["relevanceScore"] for c in citations], default=0.55)
-    confidence_score = round(best_score * 100, 1)
+    # Chuẩn hóa điểm tin cậy từ điểm tương đồng Cosine
+    confidence_score = min(98.5, round(best_score * 160, 1)) if best_score > 0.4 else round(best_score * 100, 1)
 
     logs.append({
         "stepId": "step_4",
@@ -161,7 +166,7 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
 
 
 def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
-    """Node 5: Router đánh giá ngưỡng an toàn & quyết định Handoff."""
+    """Node 5: Router đánh giá ngưỡng an toàn & sinh câu trả lời bằng Groq LLM (llama-3.3-70b-versatile)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
@@ -171,10 +176,10 @@ def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
     citations = state.get("citations", [])
 
     is_high_risk = priority == "P0_CRITICAL" or category in ["complaint", "billing", "urgent"]
-    is_low_confidence = confidence_score < 80.0
+    is_low_confidence = confidence_score < settings.RAG_CONFIDENCE_THRESHOLD
 
     if is_high_risk or is_low_confidence:
-        reason = "Sự cố P0 khẩn cấp / Giao dịch tài chính rủi ro cao" if is_high_risk else "Độ tin cậy RAG < 80%"
+        reason = "Sự cố P0 khẩn cấp / Giao dịch tài chính rủi ro cao" if is_high_risk else f"Độ tin cậy RAG < {settings.RAG_CONFIDENCE_THRESHOLD}%"
         
         logs.append({
             "stepId": "step_5",
@@ -185,25 +190,41 @@ def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
             "data": {"escalation_reason": reason}
         })
 
+
         return {
             "status": "ESCALATED_HUMAN",
             "pipeline_logs": logs
         }
     else:
         first_citation = citations[0] if len(citations) > 0 else {}
-        ai_answer = (
-            f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
-            "Cảm ơn quý khách đã liên hệ hỗ trợ. Dựa trên thông tin quy định chính thức của hệ thống:\n\n"
-            f"\"{first_citation.get('snippet', 'Hệ thống đã tiếp nhận yêu cầu.')}\"\n\n"
-            f"[Nguồn: {first_citation.get('docTitle', 'Kho Tri Thức Nội Bộ')}]"
-        )
+        context_str = "\n".join([f"- [{c.get('docTitle')}]: {c.get('snippet')}" for c in citations])
+
+        # Gọi Groq LLM (llama-3.3-70b-versatile) nếu có API Key
+        ai_answer = None
+        if groq_llm.is_available():
+            prompt_messages = build_auto_reply_messages(
+                customer_name=state.get('customer_name', 'Quý khách'),
+                subject=state.get('subject', ''),
+                content=state.get('content', ''),
+                context_str=context_str
+            )
+            ai_answer = groq_llm.generate_completion(prompt_messages)
+
+        # Fallback nếu không có Groq API Key hoặc gọi LLM bị lỗi
+        if not ai_answer:
+            ai_answer = (
+                f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
+                "Cảm ơn quý khách đã liên hệ hỗ trợ. Dựa trên thông tin quy định chính thức của hệ thống:\n\n"
+                f"\"{first_citation.get('snippet', 'Hệ thống đã tiếp nhận yêu cầu.')}\"\n\n"
+                f"[Nguồn: {first_citation.get('docTitle', 'Kho Tri Thức Nội Bộ')}]"
+            )
 
         logs.append({
             "stepId": "step_5",
             "stepName": "5. Guardrails & Decision Matrix Router",
             "status": "success",
             "timestamp": now,
-            "detail": "TỰ ĐỘNG PHẢN HỒI AN TOÀN (Auto-Resolved with Qdrant Citation).",
+            "detail": f"TỰ ĐỘNG PHẢN HỒI AN TOÀN ({'Groq LLM Llama-3.3-70b' if groq_llm.is_available() else 'Template Heuristic'}).",
             "data": {"ai_answer": ai_answer}
         })
 
@@ -226,6 +247,23 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     elif priority == "P1_HIGH":
         sentiment = "Bức xúc"
 
+    auto_draft = (
+        f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
+        "Hệ thống đã tiếp nhận thông tin yêu cầu. Nhân viên hỗ trợ đang kiểm tra và sẽ phản hồi quý khách sớm nhất."
+    )
+
+    # Dùng Groq LLM (llama-3.3-70b-versatile) để soạn thảo bản nháp câu trả lời tốt hơn cho Nhân sự
+    if groq_llm.is_available():
+        draft_messages = build_human_draft_messages(
+            subject=state.get('subject', ''),
+            content=state.get('content', ''),
+            category=category
+        )
+        llm_draft = groq_llm.generate_completion(draft_messages, max_tokens=256)
+        if llm_draft:
+            auto_draft = llm_draft
+
+
     context_package: ContextPackage = {
         "summary": f"Yêu cầu nhóm [{category.upper()}]. Tiêu đề: {state.get('subject', '')}",
         "sentiment": sentiment,
@@ -235,12 +273,10 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
             "Kích hoạt LangGraph Human Escalation"
         ],
         "recommendedAction": "Cảnh báo ca trực DevOps kiểm tra máy chủ" if priority == "P0_CRITICAL" else "Đối soát giao dịch và phản hồi khách hàng.",
-        "autoDraftResponse": (
-            f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
-            "Hệ thống đã tiếp nhận thông tin yêu cầu. Nhân viên hỗ trợ đang kiểm tra và sẽ phản hồi quý khách sớm nhất."
-        ),
+        "autoDraftResponse": auto_draft,
         "confidenceScore": confidence_score,
         "escalationReason": f"Yêu cầu nhóm {category.upper()} rủi ro cao cần con người duyệt trực tiếp."
     }
 
     return {"context_package": context_package}
+

@@ -91,3 +91,4 @@ uv run streamlit run app_streamlit.py
 - **Vector Database**: Qdrant (`qdrant-client` với HNSW Index & Cosine Distance)
 - **Web API & Dashboard Engine**: FastAPI (`uvicorn`, `pydantic`), Streamlit (`streamlit`)
 
+uv run python -m streamlit run app_streamlit.py

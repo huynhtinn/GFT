@@ -13,7 +13,8 @@ dependencies = [
     "langchain-community>=0.3.14",
     "qdrant-client>=1.12.0",
     "numpy>=1.26.0",
-    "streamlit>=1.30.0"
+    "streamlit>=1.30.0",
+    "pydantic-settings>=2.0.0"
 ]
 
 [build-system]

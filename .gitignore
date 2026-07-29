@@ -1,29 +1,27 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+
 
 # Environments & Dependencies
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Environment Variables & Secrets
+.venv
+venv
+env
 .env
-.env.local
 
 # IDEs & Editors
 .vscode/
 .idea/
-*.swp
-*.swo
+
+
+# Databases
+app.db
+*.db
+users_db.json
 
 # Project specific
 .pytest_cache/
 .coverage
 htmlcov/
 *.log
+

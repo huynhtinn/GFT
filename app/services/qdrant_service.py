@@ -5,23 +5,26 @@ import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue
 
-COLLECTION_NAME = "knowledge_base"
-VECTOR_DIM = 384  # Standard embedding dimension
+from app.config.settings import settings
+
+COLLECTION_NAME = settings.QDRANT_COLLECTION_NAME
+VECTOR_DIM = settings.VECTOR_DIM
 
 class QdrantKBEngine:
     def __init__(self, url: Optional[str] = None, in_memory: bool = False):
-        # Default connection logic: try Qdrant Docker (localhost:6333) or fallback to :memory:
-        qdrant_url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
+        # Connection logic: try Qdrant Docker or fallback to :memory:
+        qdrant_url = url or settings.QDRANT_URL
         
         try:
             if in_memory:
                 self.client = QdrantClient(location=":memory:")
                 print("[Qdrant] Running in In-Memory Mode.")
             else:
-                self.client = QdrantClient(url=qdrant_url, timeout=3.0)
+                self.client = QdrantClient(url=qdrant_url, timeout=settings.QDRANT_TIMEOUT_SECONDS)
                 # Test connection
                 self.client.get_collections()
                 print(f"[Qdrant] Successfully connected to Qdrant Docker/Server at {qdrant_url}.")
+
         except Exception as e:
             print(f"[Qdrant] Could not connect to {qdrant_url} ({e}). Falling back to In-Memory mode.")
             self.client = QdrantClient(location=":memory:")
@@ -163,3 +166,5 @@ def seed_initial_kb():
 
 # Initialize seed on module import
 seed_initial_kb()
+
+

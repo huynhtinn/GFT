@@ -11,6 +11,8 @@ api_router = APIRouter(prefix="/api")
 # In-memory ticket storage for API backend
 tickets_db: Dict[str, Dict[str, Any]] = {}
 
+from app.services.auth_service import auth_service
+
 class TicketCreateRequest(BaseModel):
     customerName: str
     customerEmail: str
@@ -27,6 +29,40 @@ class KBDocCreateRequest(BaseModel):
 class HITLResolveRequest(BaseModel):
     ticketId: str
     finalResponse: str
+
+class UserRegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: str
+    fullName: str
+    role: Optional[str] = "customer"
+
+class UserLoginRequest(BaseModel):
+    username: str
+    password: str
+
+@api_router.post("/auth/register")
+def register_user(req: UserRegisterRequest):
+    """Đăng ký tài khoản mới."""
+    res = auth_service.register_user(
+        username=req.username,
+        password=req.password,
+        email=req.email,
+        full_name=req.fullName,
+        role=req.role or "customer"
+    )
+    if not res["success"]:
+        raise HTTPException(status_code=400, detail=res["message"])
+    return res
+
+@api_router.post("/auth/login")
+def login_user(req: UserLoginRequest):
+    """Đăng nhập tài khoản."""
+    user = auth_service.authenticate_user(req.username, req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác!")
+    return {"message": "Đăng nhập thành công!", "user": user}
+
 
 @api_router.post("/tickets")
 def submit_ticket(req: TicketCreateRequest):

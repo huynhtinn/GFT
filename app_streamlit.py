@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from app.graph.builder import support_agent_graph
 from app.services.qdrant_service import qdrant_kb
-
+import os
 # Cấu hình Trang Streamlit
 st.set_page_config(
     page_title="Hệ Thống Hỗ Trợ Tự Vận Hành — LangGraph & Qdrant",
@@ -182,32 +182,117 @@ h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# Khởi tạo Session State cho danh sách Ticket
+from app.services.auth_service import auth_service
+
+# Khởi tạo Session State cho User & Tickets
 if "tickets_db" not in st.session_state:
     st.session_state["tickets_db"] = {}
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
+# GIAO DIỆN XÁC THỰC ĐĂNG NHẬP / ĐĂNG KÝ (NẾU CHƯA ĐĂNG NHẬP)
+if not st.session_state["user"]:
+    st.title("🔐 Đăng Nhập / 📝 Đăng Ký Hệ Thống")
+    st.caption("Vui lòng đăng nhập hoặc đăng ký tài khoản để trải nghiệm ứng dụng Tổng đài Hỗ trợ Multi-Agent.")
+
+    tab_login, tab_register = st.tabs(["🔐 Đăng Nhập", "📝 Đăng Ký Tài Khoản Mới"])
+
+    with tab_login:
+        st.markdown("### ⚡ Đăng Nhập Nhanh Với Tài Khoản Demo")
+        c_demo1, c_demo2 = st.columns(2)
+        if c_demo1.button("👨‍💼 Admin / Nhân Sự (`admin` / `123`)", use_container_width=True):
+            user = auth_service.authenticate_user("admin", "123")
+            if user:
+                st.session_state["user"] = user
+                st.rerun()
+        if c_demo2.button("👤 Khách hàng (`customer` / `123`)", use_container_width=True):
+            user = auth_service.authenticate_user("customer", "123")
+            if user:
+                st.session_state["user"] = user
+                st.rerun()
+
+        st.markdown("---")
+        with st.form("login_form"):
+            login_username = st.text_input("Tên đăng nhập")
+            login_password = st.text_input("Mật khẩu", type="password")
+            login_submit = st.form_submit_button("🔐 Đăng Nhập", type="primary", use_container_width=True)
+
+        if login_submit:
+            user = auth_service.authenticate_user(login_username, login_password)
+            if user:
+                st.session_state["user"] = user
+                st.success(f"🎉 Xin chào **{user['full_name']}**! Đăng nhập thành công.")
+                st.rerun()
+            else:
+                st.error("❌ Tên đăng nhập hoặc mật khẩu không chính xác!")
+
+    with tab_register:
+        with st.form("register_form"):
+            reg_username = st.text_input("Tên đăng nhập mới (VD: user123)")
+            reg_password = st.text_input("Mật khẩu mới", type="password")
+            reg_email = st.text_input("Email liên hệ", value="user123@gmail.com")
+            reg_fullname = st.text_input("Họ và tên hiển thị", value="Nguyễn Văn User")
+            reg_role = st.selectbox("Vai trò tài khoản", ["Khách hàng (customer)", "Nhân sự hỗ trợ / Admin (admin)"])
+            
+            reg_submit = st.form_submit_button("📝 Đăng Ký Tài Khoản Mới", type="primary", use_container_width=True)
+
+        if reg_submit:
+            role_code = "admin" if "admin" in reg_role.lower() else "customer"
+            res = auth_service.register_user(
+                username=reg_username,
+                password=reg_password,
+                email=reg_email,
+                full_name=reg_fullname,
+                role=role_code
+            )
+            if res["success"]:
+                st.success(f"🎉 {res['message']} Vui lòng chuyển qua tab Đăng Nhập để vào hệ thống.")
+            else:
+                st.error(f"❌ {res['message']}")
+
+    st.stop()
 
 # ── SIDEBAR NAVIGATION ────────────────────────────────────────────────
+current_user = st.session_state.get("user")
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🤖 AUTOMATION/AGENT</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #a5b4fc; font-size: 0.9em; margin-top: 0px;'>Tổng Đài Hỗ Trợ Tự Vận Hành</p>", unsafe_allow_html=True)
     st.divider()
 
-    page = st.radio(
-        "Navigation",
-        [
+    if current_user:
+        st.markdown(f"👤 **Xin chào:** `{current_user.get('full_name', '')}`")
+        st.markdown(f"🏷️ **Vai trò:** `{str(current_user.get('role', '')).upper()}`")
+        if st.button("🚪 Đăng Xuất", use_container_width=True):
+            st.session_state["user"] = None
+            st.rerun()
+        st.divider()
+
+    # Phân quyền menu theo vai trò người dùng (chỉ 2 role: admin & customer)
+    user_role = current_user.get("role", "customer") if current_user else "customer"
+    if user_role == "admin":
+        available_pages = [
             "📥 Tiếp Nhận Ticket & Multi-Agent",
             "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)",
             "📚 Tra Cứu Tri Thức Qdrant KB",
             "📊 Supervisor Dashboard"
-        ],
-        label_visibility="collapsed"
-    )
+        ]
+    else:
+        available_pages = [
+            "📥 Tiếp Nhận Ticket & Multi-Agent"
+        ]
+
+    page = st.radio("Navigation", available_pages, label_visibility="collapsed")
+
+
 
     st.divider()
     st.markdown("##### ⚙️ Môi Trường Hệ Thống")
-    st.caption("• LangGraph Engine: Ready\n• Qdrant Vector DB: Connected\n• Checkpointer: Active")
+    st.caption("• LangGraph Engine: Ready\n• Qdrant Vector DB: Connected\n• LLM Model: Groq Llama-3.3-70B-Versatile (Active)")
     st.divider()
     st.caption(f"🕐 {datetime.now().strftime('%H:%M:%S  •  %d/%m/%Y')}")
+
+
+
 
 
 # -----------------------------------------------------------------------------
@@ -220,60 +305,84 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
     st.markdown("### ⚡ Kịch Bản Mẫu (Preset Scenarios)")
     col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
     
-    preset_data = None
+    # Khởi tạo dữ liệu kịch bản mặc định trong Session State
+    if "active_preset" not in st.session_state:
+        st.session_state["active_preset"] = {
+            "name": "Nguyễn Văn A",
+            "email": "khachhang@gmail.com",
+            "channel": "web",
+            "subject": "Hỏi về bảng giá gói Enterprise",
+            "content": "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026."
+        }
     
     if col_p1.button("❓ FAQ Giá Cước", use_container_width=True):
-        preset_data = {
+        st.session_state["active_preset"] = {
             "name": "Nguyễn Văn A",
             "email": "nva@company.com",
             "channel": "web",
             "subject": "Tư vấn gói cước Enterprise",
             "content": "Bên mình đang quan tâm đến gói Enterprise cho 50 nhân sự. Cho mình xin bảng giá chi tiết và cam kết SLA với?"
         }
+        st.rerun()
+
     if col_p2.button("⚠️ Lỗi 403 Thiếu Info", use_container_width=True):
-        preset_data = {
+        st.session_state["active_preset"] = {
             "name": "Trần Thị B",
             "email": "dev@partner.com",
             "channel": "email",
             "subject": "Bị lỗi 403 Forbidden khi kết nối API",
             "content": "Tôi gọi API tạo đơn hàng bị trả về lỗi 403 Forbidden liên tục từ sáng nay. Nhờ hệ thống kiểm tra gấp!"
         }
+        st.rerun()
+
     if col_p3.button("🚨 Sự Cố P0 Khẩn Cấp", use_container_width=True):
-        preset_data = {
+        st.session_state["active_preset"] = {
             "name": "Lê Văn C",
             "email": "admin@client.com",
             "channel": "internal",
             "subject": "KHẨN CẤP P0: Sập máy chủ toàn bộ hệ thống",
             "content": "Toàn bộ hệ thống production bị sập không truy cập được, database rò rỉ hoặc mất kết nối. Cần DevOps xử lý ngay lập tức!"
         }
+        st.rerun()
+
     if col_p4.button("💳 Khiếu Nại Hoàn Tiền", use_container_width=True):
-        preset_data = {
+        st.session_state["active_preset"] = {
             "name": "Phạm Thị D",
             "email": "dpham@gmail.com",
             "channel": "zalo",
             "subject": "Bức xúc trừ tiền 2 lần trên hóa đơn tháng 7",
             "content": "Tôi bị hệ thống trừ tiền 2 lần cho cùng một gói cước tháng 7. Tôi rất bức xúc và yêu cầu hoàn tiền ngay lập tức!"
         }
+        st.rerun()
+
     if col_p5.button("⛔ Spam / Rác", use_container_width=True):
-        preset_data = {
+        st.session_state["active_preset"] = {
             "name": "Bot Spammer",
             "email": "scam@crypto.io",
             "channel": "web",
             "subject": "Cheap sale crypto trading robot 100% profit click here",
             "content": "Invest in our bitcoin trading robot now for free crypto loans and 1000% daily profit click here!"
         }
+        st.rerun()
+
+    preset = st.session_state["active_preset"]
+    user_name_default = current_user.get("full_name") if current_user else preset["name"]
+    user_email_default = current_user.get("email") if current_user else preset["email"]
 
     with st.form("ticket_form"):
         col1, col2 = st.columns(2)
         with col1:
-            customer_name = st.text_input("Tên khách hàng", value=preset_data["name"] if preset_data else "Nguyễn Văn A")
-            customer_email = st.text_input("Email liên hệ", value=preset_data["email"] if preset_data else "khachhang@gmail.com")
-            channel = st.selectbox("Kênh tiếp nhận", ["web", "email", "zalo", "internal"], index=0 if not preset_data else ["web", "email", "zalo", "internal"].index(preset_data["channel"]))
+            customer_name = st.text_input("Tên khách hàng (Đã xác thực)", value=user_name_default, disabled=bool(current_user), help="Tự động lấy theo tài khoản đăng nhập")
+            customer_email = st.text_input("Email liên hệ (Đã xác thực)", value=user_email_default, disabled=bool(current_user), help="Tự động lấy theo tài khoản đăng nhập")
+            channel_idx = ["web", "email", "zalo", "internal"].index(preset["channel"]) if preset["channel"] in ["web", "email", "zalo", "internal"] else 0
+            channel = st.selectbox("Kênh tiếp nhận", ["web", "email", "zalo", "internal"], index=channel_idx)
         with col2:
-            subject = st.text_input("Tiêu đề yêu cầu", value=preset_data["subject"] if preset_data else "Hỏi về bảng giá gói Enterprise")
-            content = st.text_area("Nội dung yêu cầu chi tiết", value=preset_data["content"] if preset_data else "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026.", height=110)
+            subject = st.text_input("Tiêu đề yêu cầu", value=preset["subject"])
+            content = st.text_area("Nội dung yêu cầu chi tiết", value=preset["content"], height=110)
         
         submitted = st.form_submit_button("🚀 Gửi Yêu Cầu & Thực Thi LangGraph Pipeline", type="primary", use_container_width=True)
+
+
 
     if submitted:
         ticket_id = f"TCK-{hash(datetime.now().isoformat()) % 9000 + 1000}"
@@ -372,10 +481,64 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
                 </div>
                 """, unsafe_allow_html=True)
 
+    # ── PHẦN TRA CỨU LỊCH SỬ TICKET & CÂU TRẢ LỜI CỦA NHÂN SỰ DÀNH CHO KHÁCH HÀNG ──
+    st.markdown("---")
+    st.markdown("### 📂 Lịch Sử Ticket & Kết Quả Phản Hồi Của Bạn")
+    st.caption("Theo dõi tiến độ xử lý và xem trực tiếp câu trả lời do Nhân sự CSKH đã duyệt.")
+
+    user_email = current_user.get("email") if current_user else ""
+    user_fullname = current_user.get("full_name") if current_user else ""
+
+    user_tickets = [
+        t for t in st.session_state["tickets_db"].values()
+        if (user_email and t.get("customerEmail") == user_email) or (user_fullname and t.get("customerName") == user_fullname)
+    ]
+
+    if not user_tickets:
+        st.info("💡 Bạn chưa gửi ticket nào. Hãy gửi yêu cầu ở trên để hệ thống ghi nhận và theo dõi tiến độ.")
+    else:
+        for tk in reversed(user_tickets):
+            status_code = tk.get("status")
+            with st.expander(f"🎫 Ticket [{tk['id']}] — {tk['subject']} ({tk.get('createdAt', '')})", expanded=(status_code in ["RESOLVED_HUMAN", "RESOLVED_AUTO"])):
+                c_info1, c_info2 = st.columns(2)
+                with c_info1:
+                    st.write(f"**Mã Ticket:** `{tk['id']}`")
+                    st.write(f"**Kênh gửi:** `{tk.get('channel', 'web')}`")
+                with c_info2:
+                    if status_code == "RESOLVED_AUTO":
+                        st.markdown('<span class="badge badge-auto">✅ RESOLVED_AUTO (AI Tự Động Trả Lời)</span>', unsafe_allow_html=True)
+                    elif status_code == "RESOLVED_HUMAN":
+                        st.markdown('<span class="badge badge-auto" style="background:#0284c7; color:#fff;">🔵 RESOLVED_HUMAN (Nhân Sự Đã Phản Hồi)</span>', unsafe_allow_html=True)
+                    elif status_code == "ESCALATED_HUMAN":
+                        st.markdown('<span class="badge badge-human">🟡 ESCALATED_HUMAN (Đang Chờ Nhân Sự Duyệt)</span>', unsafe_allow_html=True)
+                    elif status_code == "CLARIFICATION_SENT":
+                        st.markdown('<span class="badge badge-spam">🟠 CLARIFICATION_SENT (Cần Bổ Sung Thông Tin)</span>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'`{status_code}`')
+
+                st.markdown("**Nội dung yêu cầu:**")
+                st.info(tk.get("content", ""))
+
+                st.markdown("---")
+                if status_code == "RESOLVED_HUMAN":
+                    st.markdown("#### 👨‍💻 Câu Trả Lời Trực Tiếp Từ Nhân Sự CSKH:")
+                    st.success(tk.get("aiAnswer", "Chưa có nội dung phản hồi."))
+                    if tk.get("resolvedAt"):
+                        st.caption(f"🕐 Thời gian nhân sự phê duyệt & phản hồi: {tk.get('resolvedAt')}")
+                elif status_code == "RESOLVED_AUTO":
+                    st.markdown("#### 🤖 Câu Trả Lời Từ Trợ Lý AI Agent:")
+                    st.success(tk.get("aiAnswer", "Chưa có nội dung phản hồi."))
+                elif status_code == "CLARIFICATION_SENT":
+                    st.markdown("#### ❓ Yêu Cầu Bổ Sung Thông Tin:")
+                    st.warning(tk.get("clarificationQuestion", "Vui lòng cung cấp thêm thông tin."))
+                elif status_code == "ESCALATED_HUMAN":
+                    st.warning("⏳ **Yêu cầu đang nằm trong hàng chờ HITL Inbox:** Ticket của bạn đã được gửi tới Nhân sự CSKH. Vui lòng quay lại kiểm tra câu trả lời tại đây sau ít phút!")
+
 
 # -----------------------------------------------------------------------------
 # TAB 2: GIAO DIỆN NHÂN SỰ (HITL INBOX)
 # -----------------------------------------------------------------------------
+
 elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
     st.title("👨‍💻 Human-in-the-Loop (HITL) Workspace")
     st.caption("Hòm thư xử lý và phê duyệt dành cho Nhân sự hỗ trợ.")
