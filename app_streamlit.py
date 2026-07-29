@@ -6,101 +6,179 @@ from app.services.qdrant_service import qdrant_kb
 
 # Cấu hình Trang Streamlit
 st.set_page_config(
-    page_title="Tổng Đài Hỗ Trợ Tự Vận Hành — AI Support Agent",
+    page_title="Hệ Thống Hỗ Trợ Tự Vận Hành — LangGraph & Qdrant",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS cho Giao diện Trực quan & Hiện đại
+# ── Custom CSS for Premium Dark Look & Feel ──────────────────────────────────
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 24px;
-        border-radius: 12px;
-        color: white;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .main-header h1 {
-        margin: 0;
-        font-size: 26px;
-        font-weight: 700;
-        color: #ffffff;
-    }
-    .main-header p {
-        margin: 6px 0 0 0;
-        opacity: 0.9;
-        font-size: 14px;
-    }
-    .badge-auto {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #c3e6cb;
-    }
-    .badge-human {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #f5c6cb;
-    }
-    .badge-clarify {
-        background-color: #fff3cd;
-        color: #856404;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #ffeeba;
-    }
-    .badge-spam {
-        background-color: #e2e3e5;
-        color: #383d41;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #d6d8db;
-    }
-    .citation-box {
-        background-color: #f8f9fa;
-        border-left: 4px solid #007bff;
-        padding: 12px;
-        border-radius: 4px;
-        margin-top: 8px;
-        font-size: 13px;
-    }
-    .log-step {
-        border-left: 3px solid #6c757d;
-        padding-left: 12px;
-        margin-bottom: 10px;
-    }
-    .metric-card {
-        background-color: #ffffff;
-        padding: 16px;
-        border-radius: 10px;
-        border: 1px solid #e9ecef;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-        text-align: center;
-    }
-    .metric-card h3 {
-        margin: 0;
-        font-size: 24px;
-        color: #007bff;
-    }
-    .metric-card p {
-        margin: 4px 0 0 0;
-        color: #6c757d;
-        font-size: 13px;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+html, body, [class*="css"], .stMarkdown, p, span, label, button, input, textarea, select {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Sidebar Styling */
+section[data-testid="stSidebar"] {
+    background-color: #1b2232 !important;
+    border-right: 1px solid #23233b;
+}
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label {
+    color: #e2e8f0 !important;
+}
+
+/* Customize Radio Buttons in Sidebar (Royal Blue Pills) */
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 10px 0 !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 12px 16px !important;
+    border-radius: 16px !important;
+    background-color: transparent !important;
+    color: #94a3b8 !important;
+    transition: all 0.25s ease !important;
+    cursor: pointer !important;
+    border: none !important;
+    margin: 0 !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
+    display: none !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    color: inherit !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #f1f5f9 !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked),
+div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Metric Cards */
+div[data-testid="stMetric"] {
+    background: linear-gradient(135deg, #16162a 0%, #20203a 100%);
+    border: 1px solid #32325c;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-3px);
+    border-color: #5850ec;
+    box-shadow: 0 8px 30px rgba(88, 80, 236, 0.25);
+}
+div[data-testid="stMetric"] label {
+    color: #a0a2c0 !important;
+    font-size: 0.9em !important;
+    font-weight: 500 !important;
+}
+div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    font-size: 1.8em !important;
+    font-weight: 700 !important;
+}
+
+/* Expanders & Tabs */
+details {
+    border: 1px solid #282846 !important;
+    border-radius: 12px !important;
+    background: #0f0f20 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    margin-top: 8px;
+}
+summary {
+    font-weight: 600 !important;
+    color: #a5b4fc !important;
+}
+button[data-baseweb="tab"] {
+    font-weight: 600 !important;
+    font-size: 0.95em !important;
+}
+div[data-baseweb="tab-highlight"] {
+    background-color: #5850ec !important;
+}
+
+/* Titles and Headers */
+h1 {
+    background: linear-gradient(90deg, #a78bfa 0%, #6366f1 50%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+}
+h2, h3 {
+    color: #f1f5f9 !important;
+    font-weight: 700 !important;
+}
+
+/* Styled Badges */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.88em;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid transparent;
+}
+.badge-auto {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+.badge-human {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.badge-clarify {
+    background: rgba(234, 179, 8, 0.15);
+    color: #fde047;
+    border-color: rgba(234, 179, 8, 0.3);
+}
+.badge-spam {
+    background: rgba(156, 163, 175, 0.15);
+    color: #d1d5db;
+    border-color: rgba(156, 163, 175, 0.3);
+}
+
+.citation-card {
+    background: #111124;
+    border: 1px solid #202042;
+    border-left: 4px solid #6366f1;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-top: 10px;
+}
+.log-step {
+    border-left: 3px solid #6366f1;
+    padding-left: 12px;
+    margin-bottom: 12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,37 +186,36 @@ st.markdown("""
 if "tickets_db" not in st.session_state:
     st.session_state["tickets_db"] = {}
 
-# Header Chức năng
-st.markdown("""
-<div class="main-header">
-    <h1>🤖 AUTOMATION/AGENT — Tổng Đài Hỗ Trợ Tự Vận Hành</h1>
-    <p>Kiến trúc Multi-Agent State Machine (LangGraph) + Vector DB Search (Qdrant) + Human-in-the-Loop (HITL)</p>
-</div>
-""", unsafe_allow_html=True)
+# ── SIDEBAR NAVIGATION ────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🤖 AUTOMATION/AGENT</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #a5b4fc; font-size: 0.9em; margin-top: 0px;'>Tổng Đài Hỗ Trợ Tự Vận Hành</p>", unsafe_allow_html=True)
+    st.divider()
 
-# Sidebar Navigation
-st.sidebar.image("https://img.icons8.com/color/96/bot.png", width=70)
-st.sidebar.title("📌 Điều Hướng")
-page = st.sidebar.radio(
-    "Chọn giao diện chức năng:",
-    [
-        "📥 Tiếp Nhận Ticket & Multi-Agent",
-        "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)",
-        "📚 Tra Cứu Tri Thức Qdrant KB",
-        "📊 Supervisor Dashboard"
-    ]
-)
+    page = st.radio(
+        "Navigation",
+        [
+            "📥 Tiếp Nhận Ticket & Multi-Agent",
+            "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)",
+            "📚 Tra Cứu Tri Thức Qdrant KB",
+            "📊 Supervisor Dashboard"
+        ],
+        label_visibility="collapsed"
+    )
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("⚙️ Môi trường Hệ thống")
-st.sidebar.info("• LangGraph Engine: Ready\n• Qdrant Vector DB: Connected\n• Memory Checkpointer: Active")
+    st.divider()
+    st.markdown("##### ⚙️ Môi Trường Hệ Thống")
+    st.caption("• LangGraph Engine: Ready\n• Qdrant Vector DB: Connected\n• Checkpointer: Active")
+    st.divider()
+    st.caption(f"🕐 {datetime.now().strftime('%H:%M:%S  •  %d/%m/%Y')}")
 
 
 # -----------------------------------------------------------------------------
 # TAB 1: TIẾP NHẬN TICKET & MULTI-AGENT PIPELINE
 # -----------------------------------------------------------------------------
 if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
-    st.subheader("📥 Tiếp Nhận Yêu Cầu & Chạy LangGraph Multi-Agent Pipeline")
+    st.title("📥 Tiếp Nhận Yêu Cầu & Multi-Agent Pipeline")
+    st.caption("Thực thi luồng xử lý qua LangGraph State Machine & Qdrant Vector DB.")
     
     st.markdown("### ⚡ Kịch Bản Mẫu (Preset Scenarios)")
     col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
@@ -196,7 +273,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             subject = st.text_input("Tiêu đề yêu cầu", value=preset_data["subject"] if preset_data else "Hỏi về bảng giá gói Enterprise")
             content = st.text_area("Nội dung yêu cầu chi tiết", value=preset_data["content"] if preset_data else "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026.", height=110)
         
-        submitted = st.form_submit_button("🚀 Gửi Yêu Cầu & Thực Thi LangGraph Pipeline", use_container_width=True)
+        submitted = st.form_submit_button("🚀 Gửi Yêu Cầu & Thực Thi LangGraph Pipeline", type="primary", use_container_width=True)
 
     if submitted:
         ticket_id = f"TCK-{hash(datetime.now().isoformat()) % 9000 + 1000}"
@@ -216,7 +293,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             config = {"configurable": {"thread_id": ticket_id}}
             final_state = support_agent_graph.invoke(initial_state, config=config)
 
-        # Lưu vào database giả lập trong Session
+        # Lưu vào Session State DB
         st.session_state["tickets_db"][ticket_id] = {
             "id": ticket_id,
             "customerName": customer_name,
@@ -254,13 +331,15 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             st.write(f"**Confidence Score:** `{final_state.get('confidence_score', 0.0)}%`")
         with col_res3:
             if status == "RESOLVED_AUTO":
-                st.markdown('<span class="badge-auto">✅ RESOLVED_AUTO (Tự động trả lời)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-auto">✅ RESOLVED_AUTO (Tự động trả lời)</span>', unsafe_allow_html=True)
             elif status == "ESCALATED_HUMAN":
-                st.markdown('<span class="badge-human">👨‍💻 ESCALATED_HUMAN (Chuyển Nhân sự)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-human">👨‍💻 ESCALATED_HUMAN (Chuyển Nhân sự)</span>', unsafe_allow_html=True)
             elif status == "CLARIFICATION_SENT":
-                st.markdown('<span class="badge-clarify">✉️ CLARIFICATION_SENT (Chờ làm rõ)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-clarify">✉️ CLARIFICATION_SENT (Chờ làm rõ)</span>', unsafe_allow_html=True)
             elif status == "SPAM_CLOSED":
-                st.markdown('<span class="badge-spam">⛔ SPAM_CLOSED (Đã đóng Ticket rác)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-spam">⛔ SPAM_CLOSED (Đã đóng Ticket rác)</span>', unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         # Phản hồi chi tiết
         if final_state.get("ai_answer"):
@@ -275,9 +354,9 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             st.markdown("#### 📚 Trích Dẫn Tri Thức Dẫn Nguồn (Qdrant Grounding Citations):")
             for c in citations:
                 st.markdown(f"""
-                <div class="citation-box">
-                    <strong>📖 [{c.get('docId')}] {c.get('docTitle')}</strong> — <em>Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
-                    <code>"{c.get('snippet')}"</code>
+                <div class="citation-card">
+                    <strong style="color: #a5b4fc;">📖 [{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                    <code style="color: #e2e8f0; background: transparent;">"{c.get('snippet')}"</code>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -288,8 +367,8 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             for log in logs:
                 st.markdown(f"""
                 <div class="log-step">
-                    <strong>[{log.get('stepName')}]</strong> — <span style="color: grey;">{log.get('timestamp')}</span><br>
-                    Status: <code>{log.get('status').upper()}</code> | Chi tiết: {log.get('detail')}
+                    <strong style="color: #818cf8;">[{log.get('stepName')}]</strong> — <span style="color: #94a3b8;">{log.get('timestamp')}</span><br>
+                    Status: <code style="color: #38bdf8;">{log.get('status').upper()}</code> | Chi tiết: {log.get('detail')}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -298,7 +377,8 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
 # TAB 2: GIAO DIỆN NHÂN SỰ (HITL INBOX)
 # -----------------------------------------------------------------------------
 elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
-    st.subheader("👨‍💻 Human-in-the-Loop (HITL) Workspace — Hòm Thư Nhân Sự")
+    st.title("👨‍💻 Human-in-the-Loop (HITL) Workspace")
+    st.caption("Hòm thư xử lý và phê duyệt dành cho Nhân sự hỗ trợ.")
     
     escalated_tickets = [t for t in st.session_state["tickets_db"].values() if t.get("status") == "ESCALATED_HUMAN"]
     
@@ -321,7 +401,7 @@ elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
             st.text_area("Nội dung yêu cầu từ khách", ticket['content'], height=130, disabled=True)
         
         with col_t2:
-            st.markdown("### 🤖 AI Context Briefing Package (Cho Nhân Sự)")
+            st.markdown("### 🤖 AI Context Briefing Package")
             pkg = ticket.get("contextPackage") or {}
             if pkg:
                 st.markdown(f"**📌 Tóm tắt:** {pkg.get('summary')}")
@@ -349,7 +429,8 @@ elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
 # TAB 3: TRA CỨU TRI THỨC QDRANT KB
 # -----------------------------------------------------------------------------
 elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
-    st.subheader("📚 Kho Tri Thức Vector DB (Qdrant Collection Manager)")
+    st.title("📚 Kho Tri Thức Vector Database")
+    st.caption("Quản lý và tra cứu ngữ nghĩa dữ liệu trong Qdrant Vector Collection.")
     
     tab_search, tab_add = st.tabs(["🔍 Tìm Kiếm Ngữ Nghĩa (RAG Search)", "➕ Thêm Tài Liệu Mới"])
     
@@ -357,16 +438,16 @@ elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
         search_query = st.text_input("Nhập câu hỏi hoặc từ khóa cần tìm kiếm ngữ nghĩa:", value="Chính sách hoàn tiền lỗi 403")
         top_k = st.slider("Số lượng kết quả (Top K):", 1, 5, 3)
         
-        if st.button("🔎 Tra Cứu Vector Search"):
+        if st.button("🔎 Tra Cứu Vector Search", type="primary"):
             with st.spinner("Đang truy vấn Qdrant Vector Collection..."):
                 citations = qdrant_kb.search_relevant_chunks(search_query, limit=top_k)
             
             st.markdown(f"#### Tìm thấy **{len(citations)}** đoạn tri thức tương đồng nhất:")
             for idx, c in enumerate(citations):
                 st.markdown(f"""
-                <div class="citation-box">
-                    <strong>#{idx+1} [{c.get('docId')}] {c.get('docTitle')}</strong> — <em>Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
-                    <p style="margin-top: 6px;">{c.get('snippet')}</p>
+                <div class="citation-card">
+                    <strong style="color: #818cf8;">#{idx+1} [{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                    <p style="margin-top: 6px; color: #e2e8f0;">{c.get('snippet')}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -377,7 +458,7 @@ elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
             doc_tags = st.text_input("Thẻ từ khóa (phân cách bằng dấu phẩy)", "zalo, zns, webhook, api, v3")
             doc_content = st.text_area("Nội dung tài liệu", "Cấu hình Zalo ZNS API v3 cần secret key và xác thực OAuth2 token. Thời gian timeout là 5 giây.", height=120)
             
-            submit_kb = st.form_submit_button("📥 Vectorize & Index vào Qdrant")
+            submit_kb = st.form_submit_button("📥 Vectorize & Index vào Qdrant", type="primary")
             
         if submit_kb:
             doc_id = f"KB-CUST-{hash(doc_title) % 900 + 100}"
@@ -396,7 +477,8 @@ elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
 # TAB 4: SUPERVISOR DASHBOARD
 # -----------------------------------------------------------------------------
 elif page == "📊 Supervisor Dashboard":
-    st.subheader("📊 Supervisor Dashboard — Báo Cáo & Quan Sát Vận Hành")
+    st.title("📊 Supervisor Operations Dashboard")
+    st.caption("Báo cáo và quan sát chỉ số vận hành hệ thống Tổng đài Hỗ trợ.")
     
     total = len(st.session_state["tickets_db"])
     auto_res = sum(1 for t in st.session_state["tickets_db"].values() if t.get("status") == "RESOLVED_AUTO")
@@ -423,16 +505,19 @@ elif page == "📊 Supervisor Dashboard":
     
     with col_chart1:
         st.markdown("### 📈 Phân Bổ Intent / Nhóm Yêu Cầu")
-        st.bar_chart({
-            "FAQ": 58,
-            "Kỹ Thuật": 26,
-            "Thanh Toán": 18,
-            "Khiếu Nại": 12,
-            "Thiếu Info": 14,
-            "Khẩn Cấp P0": 4,
-            "Spam": 4
-        })
-        
+        categories_dist = {
+            "FAQ (Hỏi đáp chung)": (58, 58),
+            "Kỹ Thuật (Technical)": (26, 26),
+            "Thanh Toán (Billing)": (18, 18),
+            "Khiếu Nại (Complaint)": (12, 12),
+            "Thiếu Info (Incomplete)": (14, 14),
+            "Khẩn Cấp P0 (Urgent)": (4, 4),
+            "Spam / Rác": (4, 4)
+        }
+        for cat_name, (count, pct) in categories_dist.items():
+            st.write(f"**{cat_name}**: {count} tickets ({pct}%)")
+            st.progress(pct / 100.0)
+
     with col_chart2:
         st.markdown("### ⚠️ Phát Hiện Lỗ Hổng Tri Thức (KB Gaps Detected)")
         st.error("• **Chủ đề:** Hướng dẫn cấu hình Webhook Zalo ZNS v3\n  - **Số ca chuyển giao:** 14 ca\n  - **Khuyên dùng:** Nạp thêm tài liệu kỹ thuật Zalo ZNS API v3 vào Qdrant KB")

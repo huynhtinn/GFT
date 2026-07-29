@@ -16,15 +16,16 @@ class QdrantKBEngine:
         try:
             if in_memory:
                 self.client = QdrantClient(location=":memory:")
-                print("⚡ [Qdrant] Running in In-Memory Mode.")
+                print("[Qdrant] Running in In-Memory Mode.")
             else:
                 self.client = QdrantClient(url=qdrant_url, timeout=3.0)
                 # Test connection
                 self.client.get_collections()
-                print(f"🐳 [Qdrant] Successfully connected to Qdrant Docker/Server at {qdrant_url}.")
+                print(f"[Qdrant] Successfully connected to Qdrant Docker/Server at {qdrant_url}.")
         except Exception as e:
-            print(f"⚠️ [Qdrant] Could not connect to {qdrant_url} ({e}). Falling back to In-Memory mode.")
+            print(f"[Qdrant] Could not connect to {qdrant_url} ({e}). Falling back to In-Memory mode.")
             self.client = QdrantClient(location=":memory:")
+
 
         self._init_collection()
 
@@ -87,24 +88,39 @@ class QdrantKBEngine:
         """Tìm kiếm các đoạn văn bản tương đồng cao nhất từ Qdrant Vector DB."""
         query_vector = self._simple_embedding(query)
         
-        search_results = self.client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            limit=limit
-        )
+        search_results = []
+        try:
+            # qdrant-client >= 1.10 dùng query_points
+            if hasattr(self.client, "query_points"):
+                res = self.client.query_points(
+                    collection_name=COLLECTION_NAME,
+                    query=query_vector,
+                    limit=limit
+                )
+                search_results = getattr(res, "points", [])
+            elif hasattr(self.client, "search"):
+                search_results = self.client.search(
+                    collection_name=COLLECTION_NAME,
+                    query_vector=query_vector,
+                    limit=limit
+                )
+        except Exception as err:
+            print(f"⚠️ Search error: {err}")
 
         citations = []
         for res in search_results:
-            payload = res.payload or {}
+            payload = getattr(res, "payload", {}) or {}
+            score = getattr(res, "score", 0.85)
             citations.append({
                 "docId": payload.get("doc_id", "KB-UNKNOWN"),
                 "docTitle": payload.get("doc_title", "Tài liệu hệ thống"),
                 "section": payload.get("section", "Phần nội dung"),
                 "snippet": payload.get("snippet", ""),
-                "relevanceScore": round(float(res.score), 2)
+                "relevanceScore": round(float(score), 2)
             })
 
         return citations
+
 
 # Global Qdrant KB instance
 qdrant_kb = QdrantKBEngine()
