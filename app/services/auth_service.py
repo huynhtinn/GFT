@@ -1,10 +1,13 @@
 import os
+import json
 import sqlite3
 import hashlib
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-DB_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "app.db")
+
+DB_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "user.db")
+
 
 class AuthService:
     """Service quản lý Đăng ký, Đăng nhập và Phân quyền Người dùng lưu trữ trên SQLite Database."""
@@ -26,7 +29,7 @@ class AuthService:
         return hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
 
     def _init_sqlite_db(self):
-        """Khởi tạo Bảng 'users' trong SQLite Database nếu chưa tồn tại."""
+        """Khởi tạo Bảng 'users' và 'tickets' trong SQLite Database nếu chưa tồn tại."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -41,9 +44,32 @@ class AuthService:
                         created_at TEXT NOT NULL
                     );
                 """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS tickets (
+                        id TEXT PRIMARY KEY,
+                        customer_name TEXT NOT NULL,
+                        customer_email TEXT NOT NULL,
+                        channel TEXT NOT NULL,
+                        subject TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        category TEXT,
+                        priority TEXT,
+                        status TEXT NOT NULL,
+                        confidence_score REAL,
+                        citations_json TEXT,
+                        ai_answer TEXT,
+                        clarification_question TEXT,
+                        missing_slots_json TEXT,
+                        context_package_json TEXT,
+                        logs_json TEXT,
+                        created_at TEXT NOT NULL,
+                        resolved_at TEXT
+                    );
+                """)
                 conn.commit()
         except Exception as e:
-            print(f"⚠️ Lỗi khởi tạo SQLite Database: {e}")
+            print(f"Lỗi khởi tạo SQLite Database: {e}")
+
 
     def _seed_default_users(self):
         """Tạo sẵn các tài khoản demo mặc định trong SQLite nếu chưa tồn tại."""
@@ -87,7 +113,7 @@ class AuthService:
                 if row:
                     return dict(row)
         except Exception as e:
-            print(f"⚠️ Lỗi truy vấn SQLite get_user_by_username: {e}")
+            print(f"Lỗi truy vấn SQLite get_user_by_username: {e}")
         return None
 
     def register_user(
@@ -151,5 +177,82 @@ class AuthService:
 
         return None
 
+    def save_ticket(self, t: Dict[str, Any]):
+        """Lưu hoặc cập nhật thông tin Ticket vào SQLite Database."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO tickets (
+                        id, customer_name, customer_email, channel, subject, content,
+                        category, priority, status, confidence_score, citations_json,
+                        ai_answer, clarification_question, missing_slots_json,
+                        context_package_json, logs_json, created_at, resolved_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        status=excluded.status,
+                        ai_answer=excluded.ai_answer,
+                        resolved_at=excluded.resolved_at,
+                        logs_json=excluded.logs_json;
+                """, (
+                    t["id"],
+                    t.get("customerName", ""),
+                    t.get("customerEmail", ""),
+                    t.get("channel", "web"),
+                    t.get("subject", ""),
+                    t.get("content", ""),
+                    t.get("category", "faq"),
+                    t.get("priority", "P3_LOW"),
+                    t.get("status", "NEW"),
+                    t.get("confidenceScore", 0.0),
+                    json.dumps(t.get("citations", []), ensure_ascii=False),
+                    t.get("aiAnswer"),
+                    t.get("clarificationQuestion"),
+                    json.dumps(t.get("missingSlots", []), ensure_ascii=False),
+                    json.dumps(t.get("contextPackage", {}), ensure_ascii=False),
+                    json.dumps(t.get("logs", []), ensure_ascii=False),
+                    t.get("createdAt", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                    t.get("resolvedAt")
+                ))
+                conn.commit()
+        except Exception as e:
+            print(f"Lỗi lưu ticket vào SQLite: {e}")
+
+    def load_all_tickets(self) -> Dict[str, Dict[str, Any]]:
+        """Tải toàn bộ danh sách Ticket từ SQLite Database."""
+        tickets_db: Dict[str, Dict[str, Any]] = {}
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM tickets ORDER BY created_at ASC")
+                rows = cursor.fetchall()
+                for row in rows:
+                    r = dict(row)
+                    ticket_id = r["id"]
+                    tickets_db[ticket_id] = {
+                        "id": ticket_id,
+                        "customerName": r.get("customer_name"),
+                        "customerEmail": r.get("customer_email"),
+                        "channel": r.get("channel"),
+                        "subject": r.get("subject"),
+                        "content": r.get("content"),
+                        "category": r.get("category"),
+                        "priority": r.get("priority"),
+                        "status": r.get("status"),
+                        "confidenceScore": r.get("confidence_score"),
+                        "citations": json.loads(r.get("citations_json") or "[]"),
+                        "aiAnswer": r.get("ai_answer"),
+                        "clarificationQuestion": r.get("clarification_question"),
+                        "missingSlots": json.loads(r.get("missing_slots_json") or "[]"),
+                        "contextPackage": json.loads(r.get("context_package_json") or "{}"),
+                        "logs": json.loads(r.get("logs_json") or "[]"),
+                        "createdAt": r.get("created_at"),
+                        "resolvedAt": r.get("resolved_at")
+                    }
+        except Exception as e:
+            print(f"Lỗi đọc danh sách tickets từ SQLite: {e}")
+        return tickets_db
+
 # Singleton instance
 auth_service = AuthService()
+

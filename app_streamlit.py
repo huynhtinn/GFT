@@ -7,12 +7,11 @@ import os
 # Cấu hình Trang Streamlit
 st.set_page_config(
     page_title="Hệ Thống Hỗ Trợ Tự Vận Hành — LangGraph & Qdrant",
-    page_icon="🤖",
+    # page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ── Custom CSS for Premium Dark Look & Feel ──────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -21,23 +20,12 @@ html, body, [class*="css"], .stMarkdown, p, span, label, button, input, textarea
     font-family: 'Outfit', sans-serif;
 }
 
-/* Sidebar Styling */
-section[data-testid="stSidebar"] {
-    background-color: #1b2232 !important;
-    border-right: 1px solid #23233b;
-}
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label {
-    color: #e2e8f0 !important;
-}
-
-/* Customize Radio Buttons in Sidebar (Royal Blue Pills) */
+/* Customize Radio Buttons in Sidebar (Theme Adaptive Pills) */
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
-    padding: 10px 0 !important;
+    padding: 6px 0 !important;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] > label {
@@ -45,12 +33,12 @@ div[data-testid="stRadio"] > div[role="radiogroup"] > label {
     align-items: center !important;
     width: 100% !important;
     padding: 12px 16px !important;
-    border-radius: 16px !important;
-    background-color: transparent !important;
-    color: #94a3b8 !important;
+    border-radius: 14px !important;
+    background-color: var(--secondary-background-color, rgba(99, 102, 241, 0.06)) !important;
+    color: var(--text-color, inherit) !important;
     transition: all 0.25s ease !important;
     cursor: pointer !important;
-    border: none !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
     margin: 0 !important;
 }
 
@@ -60,78 +48,101 @@ div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
 
 div[data-testid="stRadio"] > div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
     font-size: 14px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     margin: 0 !important;
     color: inherit !important;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    color: #f1f5f9 !important;
+    background-color: rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked),
 div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
-    background-color: #2563eb !important;
+    background: #2563eb !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+    border-color: #2563eb !important;
+}
+div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
+    color: #ffffff !important;
+}
+
+/* User Sidebar Profile Card */
+.user-sidebar-card {
+    background: var(--secondary-background-color, rgba(99, 102, 241, 0.08));
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.user-role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.78em;
+    font-weight: 700;
+    background: rgba(37, 99, 235, 0.15);
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 /* Metric Cards */
 div[data-testid="stMetric"] {
-    background: linear-gradient(135deg, #16162a 0%, #20203a 100%);
-    border: 1px solid #32325c;
+    background: var(--secondary-background-color, rgba(99, 102, 241, 0.05));
+    border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 16px;
     padding: 16px 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
 }
 div[data-testid="stMetric"]:hover {
-    transform: translateY(-3px);
-    border-color: #5850ec;
-    box-shadow: 0 8px 30px rgba(88, 80, 236, 0.25);
+    transform: translateY(-2px);
+    border-color: #6366f1;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
 }
 div[data-testid="stMetric"] label {
-    color: #a0a2c0 !important;
     font-size: 0.9em !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    opacity: 0.85;
 }
 div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-    color: #ffffff !important;
     font-size: 1.8em !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
+    color: var(--text-color, inherit) !important;
 }
 
 /* Expanders & Tabs */
 details {
-    border: 1px solid #282846 !important;
-    border-radius: 12px !important;
-    background: #0f0f20 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 14px !important;
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.02)) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
     margin-top: 8px;
 }
 summary {
     font-weight: 600 !important;
-    color: #a5b4fc !important;
+    color: var(--text-color, inherit) !important;
 }
 button[data-baseweb="tab"] {
     font-weight: 600 !important;
     font-size: 0.95em !important;
 }
 div[data-baseweb="tab-highlight"] {
-    background-color: #5850ec !important;
+    background-color: #4f46e5 !important;
 }
 
 /* Titles and Headers */
 h1 {
-    background: linear-gradient(90deg, #a78bfa 0%, #6366f1 50%, #3b82f6 100%);
+    background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 800 !important;
     letter-spacing: -0.5px;
 }
-h2, h3 {
-    color: #f1f5f9 !important;
+h2, h3, h4 {
+    color: var(--text-color, inherit) !important;
     font-weight: 700 !important;
 }
 
@@ -141,38 +152,39 @@ h2, h3 {
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.88em;
-    font-weight: 600;
+    font-weight: 700;
     text-align: center;
     border: 1px solid transparent;
 }
 .badge-auto {
     background: rgba(34, 197, 94, 0.15);
-    color: #86efac;
+    color: #16a34a;
     border-color: rgba(34, 197, 94, 0.3);
 }
 .badge-human {
     background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
+    color: #dc2626;
     border-color: rgba(239, 68, 68, 0.3);
 }
 .badge-clarify {
     background: rgba(234, 179, 8, 0.15);
-    color: #fde047;
+    color: #d97706;
     border-color: rgba(234, 179, 8, 0.3);
 }
 .badge-spam {
-    background: rgba(156, 163, 175, 0.15);
-    color: #d1d5db;
-    border-color: rgba(156, 163, 175, 0.3);
+    background: rgba(107, 114, 128, 0.15);
+    color: #4b5563;
+    border-color: rgba(107, 114, 128, 0.3);
 }
 
 .citation-card {
-    background: #111124;
-    border: 1px solid #202042;
+    background: var(--secondary-background-color, rgba(99, 102, 241, 0.05));
+    border: 1px solid rgba(99, 102, 241, 0.2);
     border-left: 4px solid #6366f1;
     padding: 14px 18px;
     border-radius: 12px;
     margin-top: 10px;
+    color: var(--text-color, inherit);
 }
 .log-step {
     border-left: 3px solid #6366f1;
@@ -184,28 +196,29 @@ h2, h3 {
 
 from app.services.auth_service import auth_service
 
-# Khởi tạo Session State cho User & Tickets
+# Khởi tạo Session State cho User & Tickets (Lưu trữ bền vững trên SQLite DB)
 if "tickets_db" not in st.session_state:
-    st.session_state["tickets_db"] = {}
+    st.session_state["tickets_db"] = auth_service.load_all_tickets()
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
+
 # GIAO DIỆN XÁC THỰC ĐĂNG NHẬP / ĐĂNG KÝ (NẾU CHƯA ĐĂNG NHẬP)
 if not st.session_state["user"]:
-    st.title("🔐 Đăng Nhập / 📝 Đăng Ký Hệ Thống")
+    st.title("Đăng Nhập / Đăng Ký")
     st.caption("Vui lòng đăng nhập hoặc đăng ký tài khoản để trải nghiệm ứng dụng Tổng đài Hỗ trợ Multi-Agent.")
 
-    tab_login, tab_register = st.tabs(["🔐 Đăng Nhập", "📝 Đăng Ký Tài Khoản Mới"])
+    tab_login, tab_register = st.tabs(["Đăng Nhập", "Đăng Ký Tài Khoản Mới"])
 
     with tab_login:
-        st.markdown("### ⚡ Đăng Nhập Nhanh Với Tài Khoản Demo")
+        st.markdown("### Đăng Nhập Nhanh Với Tài Khoản Demo")
         c_demo1, c_demo2 = st.columns(2)
-        if c_demo1.button("👨‍💼 Admin / Nhân Sự (`admin` / `123`)", use_container_width=True):
+        if c_demo1.button("Admin / Nhân Sự (`admin` / `123`)", use_container_width=True):
             user = auth_service.authenticate_user("admin", "123")
             if user:
                 st.session_state["user"] = user
                 st.rerun()
-        if c_demo2.button("👤 Khách hàng (`customer` / `123`)", use_container_width=True):
+        if c_demo2.button("Khách hàng (`customer` / `123`)", use_container_width=True):
             user = auth_service.authenticate_user("customer", "123")
             if user:
                 st.session_state["user"] = user
@@ -215,16 +228,16 @@ if not st.session_state["user"]:
         with st.form("login_form"):
             login_username = st.text_input("Tên đăng nhập")
             login_password = st.text_input("Mật khẩu", type="password")
-            login_submit = st.form_submit_button("🔐 Đăng Nhập", type="primary", use_container_width=True)
+            login_submit = st.form_submit_button("Đăng Nhập", type="primary", use_container_width=True)
 
         if login_submit:
             user = auth_service.authenticate_user(login_username, login_password)
             if user:
                 st.session_state["user"] = user
-                st.success(f"🎉 Xin chào **{user['full_name']}**! Đăng nhập thành công.")
+                st.success(f"Xin chào **{user['full_name']}**! Đăng nhập thành công.")
                 st.rerun()
             else:
-                st.error("❌ Tên đăng nhập hoặc mật khẩu không chính xác!")
+                st.error("Tên đăng nhập hoặc mật khẩu không chính xác!")
 
     with tab_register:
         with st.form("register_form"):
@@ -234,7 +247,7 @@ if not st.session_state["user"]:
             reg_fullname = st.text_input("Họ và tên hiển thị", value="Nguyễn Văn User")
             reg_role = st.selectbox("Vai trò tài khoản", ["Khách hàng (customer)", "Nhân sự hỗ trợ / Admin (admin)"])
             
-            reg_submit = st.form_submit_button("📝 Đăng Ký Tài Khoản Mới", type="primary", use_container_width=True)
+            reg_submit = st.form_submit_button("Đăng Ký Tài Khoản Mới", type="primary", use_container_width=True)
 
         if reg_submit:
             role_code = "admin" if "admin" in reg_role.lower() else "customer"
@@ -246,39 +259,48 @@ if not st.session_state["user"]:
                 role=role_code
             )
             if res["success"]:
-                st.success(f"🎉 {res['message']} Vui lòng chuyển qua tab Đăng Nhập để vào hệ thống.")
+                st.success(f" {res['message']} Vui lòng chuyển qua tab Đăng Nhập để vào hệ thống.")
             else:
-                st.error(f"❌ {res['message']}")
+                st.error(f" {res['message']}")
 
     st.stop()
 
 # ── SIDEBAR NAVIGATION ────────────────────────────────────────────────
 current_user = st.session_state.get("user")
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🤖 AUTOMATION/AGENT</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #a5b4fc; font-size: 0.9em; margin-top: 0px;'>Tổng Đài Hỗ Trợ Tự Vận Hành</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>TỔNG ĐÀI HỖ TRỢ</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 0.85em; opacity: 0.85; margin-top: 2px;'>Tổng Đài Hỗ Trợ Tự Vận Hành</p>", unsafe_allow_html=True)
     st.divider()
 
     if current_user:
-        st.markdown(f"👤 **Xin chào:** `{current_user.get('full_name', '')}`")
-        st.markdown(f"🏷️ **Vai trò:** `{str(current_user.get('role', '')).upper()}`")
-        if st.button("🚪 Đăng Xuất", use_container_width=True):
+        role_label = "Quản Trị Viên / Admin" if current_user.get("role") == "admin" else "Khách Hàng (Customer)"
+        st.markdown(f"""
+        <div class="user-sidebar-card">
+            <div style="font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.75;">Xin chào</div>
+            <div style="font-size: 1.15em; font-weight: 700; color: #4f46e5; margin: 2px 0;"> {current_user.get('full_name')}</div>
+            <div style="font-size: 0.82em; opacity: 0.85; word-break: break-all;"> {current_user.get('email')}</div>
+            <div style="margin-top: 8px;">
+                <span class="user-role-badge">{role_label}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("Đăng Xuất", use_container_width=True):
             st.session_state["user"] = None
             st.rerun()
         st.divider()
 
-    # Phân quyền menu theo vai trò người dùng (chỉ 2 role: admin & customer)
+
+    # Phân quyền menu theo vai trò người dùng (Admin vs Customer)
     user_role = current_user.get("role", "customer") if current_user else "customer"
     if user_role == "admin":
         available_pages = [
-            "📥 Tiếp Nhận Ticket & Multi-Agent",
-            "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)",
-            "📚 Tra Cứu Tri Thức Qdrant KB",
-            "📊 Supervisor Dashboard"
+            "Giao Diện Nhân Sự",
+            "Tra Cứu Tri Thức"
         ]
     else:
         available_pages = [
-            "📥 Tiếp Nhận Ticket & Multi-Agent"
+            "Tiếp Nhận Ticket"
         ]
 
     page = st.radio("Navigation", available_pages, label_visibility="collapsed")
@@ -286,10 +308,7 @@ with st.sidebar:
 
 
     st.divider()
-    st.markdown("##### ⚙️ Môi Trường Hệ Thống")
-    st.caption("• LangGraph Engine: Ready\n• Qdrant Vector DB: Connected\n• LLM Model: Groq Llama-3.3-70B-Versatile (Active)")
-    st.divider()
-    st.caption(f"🕐 {datetime.now().strftime('%H:%M:%S  •  %d/%m/%Y')}")
+    st.caption(f" {datetime.now().strftime('%H:%M:%S  •  %d/%m/%Y')}")
 
 
 
@@ -298,11 +317,10 @@ with st.sidebar:
 # -----------------------------------------------------------------------------
 # TAB 1: TIẾP NHẬN TICKET & MULTI-AGENT PIPELINE
 # -----------------------------------------------------------------------------
-if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
-    st.title("📥 Tiếp Nhận Yêu Cầu & Multi-Agent Pipeline")
-    st.caption("Thực thi luồng xử lý qua LangGraph State Machine & Qdrant Vector DB.")
+if "Tiếp Nhận Ticket" in page:
+    st.title(" Tiếp Nhận Yêu Cầu")
     
-    st.markdown("### ⚡ Kịch Bản Mẫu (Preset Scenarios)")
+    st.markdown("### Kịch Bản Mẫu")
     col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
     
     # Khởi tạo dữ liệu kịch bản mặc định trong Session State
@@ -315,7 +333,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             "content": "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026."
         }
     
-    if col_p1.button("❓ FAQ Giá Cước", use_container_width=True):
+    if col_p1.button("FAQ Giá Cước", use_container_width=True):
         st.session_state["active_preset"] = {
             "name": "Nguyễn Văn A",
             "email": "nva@company.com",
@@ -325,7 +343,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
         }
         st.rerun()
 
-    if col_p2.button("⚠️ Lỗi 403 Thiếu Info", use_container_width=True):
+    if col_p2.button("Lỗi 403 Thiếu Info", use_container_width=True):
         st.session_state["active_preset"] = {
             "name": "Trần Thị B",
             "email": "dev@partner.com",
@@ -335,7 +353,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
         }
         st.rerun()
 
-    if col_p3.button("🚨 Sự Cố P0 Khẩn Cấp", use_container_width=True):
+    if col_p3.button("Sự Cố P0 Khẩn Cấp", use_container_width=True):
         st.session_state["active_preset"] = {
             "name": "Lê Văn C",
             "email": "admin@client.com",
@@ -345,7 +363,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
         }
         st.rerun()
 
-    if col_p4.button("💳 Khiếu Nại Hoàn Tiền", use_container_width=True):
+    if col_p4.button("Khiếu Nại Hoàn Tiền", use_container_width=True):
         st.session_state["active_preset"] = {
             "name": "Phạm Thị D",
             "email": "dpham@gmail.com",
@@ -355,7 +373,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
         }
         st.rerun()
 
-    if col_p5.button("⛔ Spam / Rác", use_container_width=True):
+    if col_p5.button("Spam / Rác", use_container_width=True):
         st.session_state["active_preset"] = {
             "name": "Bot Spammer",
             "email": "scam@crypto.io",
@@ -380,7 +398,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             subject = st.text_input("Tiêu đề yêu cầu", value=preset["subject"])
             content = st.text_area("Nội dung yêu cầu chi tiết", value=preset["content"], height=110)
         
-        submitted = st.form_submit_button("🚀 Gửi Yêu Cầu & Thực Thi LangGraph Pipeline", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Gửi Yêu Cầu & Thực Thi", type="primary", use_container_width=True)
 
 
 
@@ -398,12 +416,12 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             "pipeline_logs": []
         }
 
-        with st.spinner("🧠 LangGraph Multi-Agent Engine đang thực thi luồng xử lý..."):
+        with st.spinner("LangGraph Multi-Agent Engine đang thực thi luồng xử lý..."):
             config = {"configurable": {"thread_id": ticket_id}}
             final_state = support_agent_graph.invoke(initial_state, config=config)
 
-        # Lưu vào Session State DB
-        st.session_state["tickets_db"][ticket_id] = {
+        # Lưu vào Session State DB & Lưu bền vững vào SQLite user.db
+        ticket_item = {
             "id": ticket_id,
             "customerName": customer_name,
             "customerEmail": customer_email,
@@ -423,11 +441,15 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-        st.success(f"✅ Đã xử lý xong Ticket mã **[{ticket_id}]**!")
+        st.session_state["tickets_db"][ticket_id] = ticket_item
+        auth_service.save_ticket(ticket_item)
+
+        st.success(f"Đã xử lý xong Ticket mã **[{ticket_id}]**!")
+
         
         # Hiển thị Kết quả Xử lý
         st.markdown("---")
-        st.markdown("### 📊 Kết Quả Phân Tích & Phản Hồi Từ AI Agent")
+        st.markdown("### Kết Quả Phân Tích & Phản Hồi Từ AI Agent")
         
         status = final_state.get("status")
         col_res1, col_res2, col_res3 = st.columns(3)
@@ -440,38 +462,38 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
             st.write(f"**Confidence Score:** `{final_state.get('confidence_score', 0.0)}%`")
         with col_res3:
             if status == "RESOLVED_AUTO":
-                st.markdown('<span class="badge badge-auto">✅ RESOLVED_AUTO (Tự động trả lời)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-auto">RESOLVED_AUTO (Tự động trả lời)</span>', unsafe_allow_html=True)
             elif status == "ESCALATED_HUMAN":
-                st.markdown('<span class="badge badge-human">👨‍💻 ESCALATED_HUMAN (Chuyển Nhân sự)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-human">ESCALATED_HUMAN (Chuyển Nhân sự)</span>', unsafe_allow_html=True)
             elif status == "CLARIFICATION_SENT":
-                st.markdown('<span class="badge badge-clarify">✉️ CLARIFICATION_SENT (Chờ làm rõ)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-clarify">CLARIFICATION_SENT (Chờ làm rõ)</span>', unsafe_allow_html=True)
             elif status == "SPAM_CLOSED":
-                st.markdown('<span class="badge badge-spam">⛔ SPAM_CLOSED (Đã đóng Ticket rác)</span>', unsafe_allow_html=True)
+                st.markdown('<span class="badge badge-spam">SPAM_CLOSED (Đã đóng Ticket rác)</span>', unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Phản hồi chi tiết
         if final_state.get("ai_answer"):
-            st.info(f"**💬 Câu Phản Hồi Tự Động:**\n\n{final_state.get('ai_answer')}")
+            st.info(f"**Câu Phản Hồi Tự Động:**\n\n{final_state.get('ai_answer')}")
         
         if final_state.get("clarification_question"):
-            st.warning(f"**✉️ Câu Hỏi Tự Động Làm Rõ Thông Tin:**\n\n{final_state.get('clarification_question')}")
+            st.warning(f"**Câu Hỏi Tự Động Làm Rõ Thông Tin:**\n\n{final_state.get('clarification_question')}")
         
         # Citations
         citations = final_state.get("citations", [])
         if citations:
-            st.markdown("#### 📚 Trích Dẫn Tri Thức Dẫn Nguồn (Qdrant Grounding Citations):")
+            st.markdown("#### Trích Dẫn Tri Thức Dẫn Nguồn (Qdrant Grounding Citations):")
             for c in citations:
                 st.markdown(f"""
                 <div class="citation-card">
-                    <strong style="color: #a5b4fc;">📖 [{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                    <strong style="color: #a5b4fc;">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
                     <code style="color: #e2e8f0; background: transparent;">"{c.get('snippet')}"</code>
                 </div>
                 """, unsafe_allow_html=True)
         
         # Logs chi tiết
         st.markdown("---")
-        with st.expander("🔍 Xem Chi Tiết Nhật Ký Xử Lý Multi-Agent (Pipeline Audit Logs)", expanded=True):
+        with st.expander("Xem Chi Tiết Nhật Ký Xử Lý Multi-Agent (Pipeline Audit Logs)", expanded=True):
             logs = final_state.get("pipeline_logs", [])
             for log in logs:
                 st.markdown(f"""
@@ -483,7 +505,7 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
 
     # ── PHẦN TRA CỨU LỊCH SỬ TICKET & CÂU TRẢ LỜI CỦA NHÂN SỰ DÀNH CHO KHÁCH HÀNG ──
     st.markdown("---")
-    st.markdown("### 📂 Lịch Sử Ticket & Kết Quả Phản Hồi Của Bạn")
+    st.markdown("### Lịch Sử Ticket & Kết Quả Phản Hồi Của Bạn")
     st.caption("Theo dõi tiến độ xử lý và xem trực tiếp câu trả lời do Nhân sự CSKH đã duyệt.")
 
     user_email = current_user.get("email") if current_user else ""
@@ -495,24 +517,24 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
     ]
 
     if not user_tickets:
-        st.info("💡 Bạn chưa gửi ticket nào. Hãy gửi yêu cầu ở trên để hệ thống ghi nhận và theo dõi tiến độ.")
+        st.info("Bạn chưa gửi ticket nào. Hãy gửi yêu cầu ở trên để hệ thống ghi nhận và theo dõi tiến độ.")
     else:
         for tk in reversed(user_tickets):
             status_code = tk.get("status")
-            with st.expander(f"🎫 Ticket [{tk['id']}] — {tk['subject']} ({tk.get('createdAt', '')})", expanded=(status_code in ["RESOLVED_HUMAN", "RESOLVED_AUTO"])):
+            with st.expander(f"Ticket [{tk['id']}] — {tk['subject']} ({tk.get('createdAt', '')})", expanded=(status_code in ["RESOLVED_HUMAN", "RESOLVED_AUTO"])):
                 c_info1, c_info2 = st.columns(2)
                 with c_info1:
                     st.write(f"**Mã Ticket:** `{tk['id']}`")
                     st.write(f"**Kênh gửi:** `{tk.get('channel', 'web')}`")
                 with c_info2:
                     if status_code == "RESOLVED_AUTO":
-                        st.markdown('<span class="badge badge-auto">✅ RESOLVED_AUTO (AI Tự Động Trả Lời)</span>', unsafe_allow_html=True)
+                        st.markdown('<span class="badge badge-auto">RESOLVED_AUTO (AI Tự Động Trả Lời)</span>', unsafe_allow_html=True)
                     elif status_code == "RESOLVED_HUMAN":
-                        st.markdown('<span class="badge badge-auto" style="background:#0284c7; color:#fff;">🔵 RESOLVED_HUMAN (Nhân Sự Đã Phản Hồi)</span>', unsafe_allow_html=True)
+                        st.markdown('<span class="badge badge-auto" style="background:#0284c7; color:#fff;">RESOLVED_HUMAN (Nhân Sự Đã Phản Hồi)</span>', unsafe_allow_html=True)
                     elif status_code == "ESCALATED_HUMAN":
-                        st.markdown('<span class="badge badge-human">🟡 ESCALATED_HUMAN (Đang Chờ Nhân Sự Duyệt)</span>', unsafe_allow_html=True)
+                        st.markdown('<span class="badge badge-human">ESCALATED_HUMAN (Đang Chờ Nhân Sự Duyệt)</span>', unsafe_allow_html=True)
                     elif status_code == "CLARIFICATION_SENT":
-                        st.markdown('<span class="badge badge-spam">🟠 CLARIFICATION_SENT (Cần Bổ Sung Thông Tin)</span>', unsafe_allow_html=True)
+                        st.markdown('<span class="badge badge-spam">CLARIFICATION_SENT (Cần Bổ Sung Thông Tin)</span>', unsafe_allow_html=True)
                     else:
                         st.markdown(f'`{status_code}`')
 
@@ -521,34 +543,33 @@ if page == "📥 Tiếp Nhận Ticket & Multi-Agent":
 
                 st.markdown("---")
                 if status_code == "RESOLVED_HUMAN":
-                    st.markdown("#### 👨‍💻 Câu Trả Lời Trực Tiếp Từ Nhân Sự CSKH:")
+                    st.markdown("#### Câu Trả Lời Trực Tiếp Từ Nhân Sự CSKH:")
                     st.success(tk.get("aiAnswer", "Chưa có nội dung phản hồi."))
                     if tk.get("resolvedAt"):
-                        st.caption(f"🕐 Thời gian nhân sự phê duyệt & phản hồi: {tk.get('resolvedAt')}")
+                        st.caption(f"Thời gian nhân sự phê duyệt & phản hồi: {tk.get('resolvedAt')}")
                 elif status_code == "RESOLVED_AUTO":
-                    st.markdown("#### 🤖 Câu Trả Lời Từ Trợ Lý AI Agent:")
+                    st.markdown("#### Câu Trả Lời Từ Trợ Lý AI Agent:")
                     st.success(tk.get("aiAnswer", "Chưa có nội dung phản hồi."))
                 elif status_code == "CLARIFICATION_SENT":
-                    st.markdown("#### ❓ Yêu Cầu Bổ Sung Thông Tin:")
+                    st.markdown("#### Yêu Cầu Bổ Sung Thông Tin:")
                     st.warning(tk.get("clarificationQuestion", "Vui lòng cung cấp thêm thông tin."))
                 elif status_code == "ESCALATED_HUMAN":
-                    st.warning("⏳ **Yêu cầu đang nằm trong hàng chờ HITL Inbox:** Ticket của bạn đã được gửi tới Nhân sự CSKH. Vui lòng quay lại kiểm tra câu trả lời tại đây sau ít phút!")
+                    st.warning("**Yêu cầu đang nằm trong hàng chờ:** Ticket của bạn đã được gửi tới Nhân sự CSKH. Vui lòng quay lại kiểm tra câu trả lời tại đây sau ít phút!")
 
 
 # -----------------------------------------------------------------------------
-# TAB 2: GIAO DIỆN NHÂN SỰ (HITL INBOX)
+# TAB 2: GIAO DIỆN NHÂN SỰ 
 # -----------------------------------------------------------------------------
-
-elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
-    st.title("👨‍💻 Human-in-the-Loop (HITL) Workspace")
+elif "Giao Diện Nhân Sự" in page:
+    st.title("Workspace Nhân Sự")
     st.caption("Hòm thư xử lý và phê duyệt dành cho Nhân sự hỗ trợ.")
     
     escalated_tickets = [t for t in st.session_state["tickets_db"].values() if t.get("status") == "ESCALATED_HUMAN"]
     
     if not escalated_tickets:
-        st.info("🎉 Hiện không có Ticket nào cần con người can thiệp trong HITL Inbox.")
+        st.info("Hiện không có Ticket nào cần con người can thiệp trong Workspace Nhân sự.")
     else:
-        st.warning(f"⚠️ Đang có **{len(escalated_tickets)}** ticket cần nhân sự kiểm tra và phê duyệt.")
+        st.warning(f"Đang có **{len(escalated_tickets)}** ticket cần nhân sự kiểm tra và phê duyệt.")
         
         selected_ticket_id = st.selectbox("Chọn Ticket cần duyệt:", [t["id"] for t in escalated_tickets])
         ticket = next(t for t in escalated_tickets if t["id"] == selected_ticket_id)
@@ -557,51 +578,66 @@ elif page == "👨‍💻 Giao Diện Nhân Sự (HITL Inbox)":
         col_t1, col_t2 = st.columns([1, 1])
         
         with col_t1:
-            st.markdown(f"### 📋 Thông Tin Ticket `[{ticket['id']}]`")
+            st.markdown(f"### Thông Tin Ticket `[{ticket['id']}]`")
             st.write(f"**Khách hàng:** {ticket['customerName']} ({ticket['customerEmail']})")
             st.write(f"**Kênh:** `{ticket['channel']}` | **Độ ưu tiên:** `{ticket['priority']}`")
             st.write(f"**Tiêu đề:** {ticket['subject']}")
             st.text_area("Nội dung yêu cầu từ khách", ticket['content'], height=130, disabled=True)
         
         with col_t2:
-            st.markdown("### 🤖 AI Context Briefing Package")
+            st.markdown("### AI Context Briefing Package")
             pkg = ticket.get("contextPackage") or {}
             if pkg:
-                st.markdown(f"**📌 Tóm tắt:** {pkg.get('summary')}")
-                st.markdown(f"**🎯 Thái độ (Sentiment):** `{pkg.get('sentiment')}`")
-                st.markdown(f"**💡 Hành động đề xuất:** `{pkg.get('recommendedAction')}`")
-                st.markdown(f"**🚨 Lý do chuyển giao:** {pkg.get('escalationReason')}")
+                st.markdown(f"**Tóm tắt:** {pkg.get('summary')}")
+                st.markdown(f"**Thái độ (Sentiment):** `{pkg.get('sentiment')}`")
+                st.markdown(f"**Hành động đề xuất:** `{pkg.get('recommendedAction')}`")
+                st.markdown(f"**Lý do chuyển giao:** {pkg.get('escalationReason')}")
             else:
                 st.write("Chưa có gói briefing.")
 
         st.markdown("---")
-        st.markdown("### ✍️ Phê Duyệt & Chỉnh Sửa Câu Trả Lời Gửi Khách Hàng")
+        st.markdown("### Phê Duyệt & Chỉnh Sửa Câu Trả Lời Gửi Khách Hàng")
         
-        default_reply = pkg.get("autoDraftResponse") if pkg else "Kính chào quý khách, nhân viên hỗ trợ đã tiếp nhận yêu cầu và xử lý thành công."
-        final_reply = st.text_area("Nội dung câu trả lời chính thức:", value=default_reply, height=120)
+        default_reply = pkg.get("autoDraftResponse") if pkg else "Kính gửi [Tên khách hàng],\n\nNhân viên hỗ trợ đã tiếp nhận yêu cầu và xử lý thành công cho quý khách.\n\nTrân trọng,\n[Tên Nhân Sự]"
         
-        if st.button("✅ Phê Duyệt & Gửi Phản Hồi Cho Khách Hàng", type="primary", use_container_width=True):
+        # Tự động điền Tên khách hàng và Tên nhân sự vào bản nháp
+        cust_name = ticket.get("customerName", "Quý khách")
+        staff_name = current_user.get("full_name", "Nhân sự hỗ trợ") if current_user else "Nhân sự hỗ trợ"
+
+        for ph in ["[Tên khách hàng]", "[Tên Khách Hàng]", "[Tên khách]", "[Tên Khách]"]:
+            default_reply = default_reply.replace(ph, cust_name)
+
+        for ph in ["[Tên nhân sự]", "[Tên Nhân sự]", "[Tên Nhân Sự]", "[Tên nhân viên]", "[Tên Nhân Viên]", "[Tên Nhân viên]", "[Tên Nhân sư]"]:
+            default_reply = default_reply.replace(ph, staff_name)
+
+        final_reply = st.text_area("Nội dung câu trả lời chính thức:", value=default_reply, height=140)
+
+        
+        if st.button("Phê Duyệt & Gửi Phản Hồi Cho Khách Hàng", type="primary", use_container_width=True):
             ticket["status"] = "RESOLVED_HUMAN"
             ticket["aiAnswer"] = final_reply
             ticket["resolvedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            st.success(f"🎉 Đã phê duyệt và phản hồi cho Ticket [{ticket['id']}] thành công!")
+            auth_service.save_ticket(ticket)
+            st.success(f"Đã phê duyệt và phản hồi cho Ticket [{ticket['id']}] thành công!")
             st.rerun()
+
 
 
 # -----------------------------------------------------------------------------
 # TAB 3: TRA CỨU TRI THỨC QDRANT KB
 # -----------------------------------------------------------------------------
-elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
-    st.title("📚 Kho Tri Thức Vector Database")
+elif "Tra Cứu Tri Thức" in page:
+    st.title("Tra Cứu Tri Thức Vector Database")
+
     st.caption("Quản lý và tra cứu ngữ nghĩa dữ liệu trong Qdrant Vector Collection.")
     
-    tab_search, tab_add = st.tabs(["🔍 Tìm Kiếm Ngữ Nghĩa (RAG Search)", "➕ Thêm Tài Liệu Mới"])
+    tab_search, tab_add = st.tabs(["Tìm Kiếm Ngữ Nghĩa (RAG Search)", "Thêm Tài Liệu Mới"])
     
     with tab_search:
         search_query = st.text_input("Nhập câu hỏi hoặc từ khóa cần tìm kiếm ngữ nghĩa:", value="Chính sách hoàn tiền lỗi 403")
         top_k = st.slider("Số lượng kết quả (Top K):", 1, 5, 3)
         
-        if st.button("🔎 Tra Cứu Vector Search", type="primary"):
+        if st.button("Tra Cứu Vector Search", type="primary"):
             with st.spinner("Đang truy vấn Qdrant Vector Collection..."):
                 citations = qdrant_kb.search_relevant_chunks(search_query, limit=top_k)
             
@@ -615,74 +651,103 @@ elif page == "📚 Tra Cứu Tri Thức Qdrant KB":
                 """, unsafe_allow_html=True)
                 
     with tab_add:
-        with st.form("add_kb_form"):
-            doc_title = st.text_input("Tiêu đề tài liệu", "Hướng dẫn Cấu hình Webhook Zalo ZNS v3")
-            doc_cat = st.selectbox("Chuyên mục", ["Thanh toán & Hóa đơn", "Kỹ thuật & Tích hợp", "Hỏi đáp Thông tin", "Quy trình Khẩn cấp"])
-            doc_tags = st.text_input("Thẻ từ khóa (phân cách bằng dấu phẩy)", "zalo, zns, webhook, api, v3")
-            doc_content = st.text_area("Nội dung tài liệu", "Cấu hình Zalo ZNS API v3 cần secret key và xác thực OAuth2 token. Thời gian timeout là 5 giây.", height=120)
-            
-            submit_kb = st.form_submit_button("📥 Vectorize & Index vào Qdrant", type="primary")
-            
-        if submit_kb:
-            doc_id = f"KB-CUST-{hash(doc_title) % 900 + 100}"
-            tags_list = [t.strip() for t in doc_tags.split(",") if t.strip()]
-            qdrant_kb.upsert_document(
-                doc_id=doc_id,
-                title=doc_title,
-                category=doc_cat,
-                content=doc_content,
-                tags=tags_list
+        sub_upload, sub_manual = st.tabs(["Upload File Tài Liệu", "Nhập Văn Bản Thủ Công"])
+
+        with sub_upload:
+            st.markdown("### Upload Nhiều Tệp Tài Liệu Tri Thức (.txt, .pdf, .docx)")
+            uploaded_files = st.file_uploader(
+                "Tải file tài liệu từ máy tính của bạn:",
+                type=["txt", "pdf", "docx"],
+                accept_multiple_files=True,
             )
-            st.success(f"✅ Đã nạp và tạo Vector Index cho tài liệu mã **[{doc_id}]** vào Qdrant DB thành công!")
+
+            if uploaded_files:
+                st.info(f"Đã chọn **{len(uploaded_files)}** tệp tài liệu để nạp.")
+                
+                c_opt1, c_opt2 = st.columns(2)
+                with c_opt1:
+                    batch_cat = st.selectbox("Chuyên mục chung cho các file", ["Thanh toán & Hóa đơn", "Kỹ thuật & Tích hợp", "Hỏi đáp Thông tin", "Quy trình Khẩn cấp"], key="batch_cat")
+                with c_opt2:
+                    batch_tags = st.text_input("Thẻ từ khóa chung (phân cách bằng dấu phẩy)", value="batch_upload, KB_doc", key="batch_tags")
+
+                st.markdown("#### Danh sách tệp xem trước:")
+                processed_docs = []
+                for idx, file_obj in enumerate(uploaded_files):
+                    file_title = os.path.splitext(file_obj.name)[0]
+                    # Trích xuất văn bản từ file
+                    raw_bytes = file_obj.getvalue()
+                    file_text = ""
+                    fname_lower = file_obj.name.lower()
+                    if fname_lower.endswith(".json"):
+                        try:
+                            parsed_json = json.loads(raw_bytes.decode("utf-8"))
+                            file_text = json.dumps(parsed_json, ensure_ascii=False, indent=2)
+                        except Exception:
+                            file_text = raw_bytes.decode("utf-8", errors="ignore")
+                    elif fname_lower.endswith(".pdf"):
+                        try:
+                            import pypdf
+                            reader = pypdf.PdfReader(file_obj)
+                            file_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+                        except Exception:
+                            file_text = raw_bytes.decode("utf-8", errors="ignore")
+                    elif fname_lower.endswith(".docx"):
+                        try:
+                            import docx
+                            doc = docx.Document(file_obj)
+                            file_text = "\n".join([p.text for p in doc.paragraphs if p.text])
+                        except Exception:
+                            file_text = raw_bytes.decode("utf-8", errors="ignore")
+                    else:
+                        file_text = raw_bytes.decode("utf-8", errors="ignore")
+
+                    processed_docs.append({
+                        "filename": file_obj.name,
+                        "title": file_title,
+                        "content": file_text
+                    })
+                    
+                    with st.expander(f"#{idx+1} {file_obj.name} ({round(file_obj.size/1024, 2)} KB)", expanded=(idx==0)):
+                        st.text_area(f"Nội dung trích xuất ({file_obj.name})", value=file_text[:500] + ("..." if len(file_text) > 500 else ""), height=100, key=f"preview_{idx}")
+
+                st.markdown("---")
+                if st.button(f"Vectorize & Index Tất Cả {len(uploaded_files)} File Vào Qdrant DB", type="primary", use_container_width=True):
+                    progress_bar = st.progress(0)
+                    tags_list = [t.strip() for t in batch_tags.split(",") if t.strip()]
+                    success_count = 0
+
+                    for idx, doc in enumerate(processed_docs):
+                        doc_id = f"KB-FILE-{hash(doc['title'] + str(idx)) % 9000 + 1000}"
+                        qdrant_kb.upsert_document(
+                            doc_id=doc_id,
+                            title=doc['title'],
+                            category=batch_cat,
+                            content=doc['content'],
+                            tags=tags_list
+                        )
+                        success_count += 1
+                        progress_bar.progress((idx + 1) / len(processed_docs))
+
+                    st.success(f"Đã nạp thành công tất cả **{success_count}/{len(uploaded_files)}** tài liệu vào Qdrant Vector DB!")
 
 
-# -----------------------------------------------------------------------------
-# TAB 4: SUPERVISOR DASHBOARD
-# -----------------------------------------------------------------------------
-elif page == "📊 Supervisor Dashboard":
-    st.title("📊 Supervisor Operations Dashboard")
-    st.caption("Báo cáo và quan sát chỉ số vận hành hệ thống Tổng đài Hỗ trợ.")
-    
-    total = len(st.session_state["tickets_db"])
-    auto_res = sum(1 for t in st.session_state["tickets_db"].values() if t.get("status") == "RESOLVED_AUTO")
-    escalated = sum(1 for t in st.session_state["tickets_db"].values() if t.get("status") == "ESCALATED_HUMAN" or t.get("status") == "RESOLVED_HUMAN")
-    
-    deflect_rate = round(auto_res / total * 100, 1) if total > 0 else 68.5
-    esc_rate = round(escalated / total * 100, 1) if total > 0 else 24.0
-    
-    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-    
-    with col_m1:
-        st.metric("Tổng Ticket Hôm Nay", total or 142)
-    with col_m2:
-        st.metric("Tỷ Lệ Tự Động (Deflection)", f"{deflect_rate}%")
-    with col_m3:
-        st.metric("Tỷ Lệ Chuyển Nhân Sự", f"{esc_rate}%")
-    with col_m4:
-        st.metric("Thời Gian Phản Hồi TB", "12s")
-    with col_m5:
-        st.metric("Grounding Confidence TB", "94.8%")
-
-    st.markdown("---")
-    col_chart1, col_chart2 = st.columns(2)
-    
-    with col_chart1:
-        st.markdown("### 📈 Phân Bổ Intent / Nhóm Yêu Cầu")
-        categories_dist = {
-            "FAQ (Hỏi đáp chung)": (58, 58),
-            "Kỹ Thuật (Technical)": (26, 26),
-            "Thanh Toán (Billing)": (18, 18),
-            "Khiếu Nại (Complaint)": (12, 12),
-            "Thiếu Info (Incomplete)": (14, 14),
-            "Khẩn Cấp P0 (Urgent)": (4, 4),
-            "Spam / Rác": (4, 4)
-        }
-        for cat_name, (count, pct) in categories_dist.items():
-            st.write(f"**{cat_name}**: {count} tickets ({pct}%)")
-            st.progress(pct / 100.0)
-
-    with col_chart2:
-        st.markdown("### ⚠️ Phát Hiện Lỗ Hổng Tri Thức (KB Gaps Detected)")
-        st.error("• **Chủ đề:** Hướng dẫn cấu hình Webhook Zalo ZNS v3\n  - **Số ca chuyển giao:** 14 ca\n  - **Khuyên dùng:** Nạp thêm tài liệu kỹ thuật Zalo ZNS API v3 vào Qdrant KB")
-        st.warning("• **Chủ đề:** Quy trình xuất hóa đơn VAT điện tử FDI\n  - **Số ca chuyển giao:** 9 ca\n  - **Khuyên dùng:** Cập nhật điều khoản VAT nhà thầu nước ngoài vào KB-POL-001")
-
+        with sub_manual:
+            with st.form("add_kb_form"):
+                doc_title = st.text_input("Tiêu đề tài liệu", "Hướng dẫn Cấu hình Webhook Zalo ZNS v3")
+                doc_cat = st.selectbox("Chuyên mục", ["Thanh toán & Hóa đơn", "Kỹ thuật & Tích hợp", "Hỏi đáp Thông tin", "Quy trình Khẩn cấp"], key="man_cat")
+                doc_tags = st.text_input("Thẻ từ khóa (phân cách bằng dấu phẩy)", "zalo, zns, webhook, api, v3", key="man_tags")
+                doc_content = st.text_area("Nội dung tài liệu", "Cấu hình Zalo ZNS API v3 cần secret key và xác thực OAuth2 token. Thời gian timeout là 5 giây.", height=120)
+                
+                submit_kb = st.form_submit_button("Vectorize & Index vào Qdrant", type="primary", use_container_width=True)
+                
+            if submit_kb:
+                doc_id = f"KB-CUST-{hash(doc_title) % 900 + 100}"
+                tags_list = [t.strip() for t in doc_tags.split(",") if t.strip()]
+                qdrant_kb.upsert_document(
+                    doc_id=doc_id,
+                    title=doc_title,
+                    category=doc_cat,
+                    content=doc_content,
+                    tags=tags_list
+                )
+                st.success(f"Đã nạp và tạo Vector Index cho tài liệu mã **[{doc_id}]** vào Qdrant DB thành công!")

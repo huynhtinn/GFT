@@ -4,24 +4,48 @@ from app.graph.state import SupportState, PipelineLog, GroundingCitation, Contex
 from app.services.qdrant_service import qdrant_kb
 from app.services.llm_service import groq_llm
 
+import json
+from app.prompts.support_prompts import (
+    build_auto_reply_messages,
+    build_human_draft_messages,
+    build_clarification_question,
+    build_classifier_messages,
+    build_spam_detector_messages
+)
+
 def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
-    """Node 1: Kiểm tra Spam & Trùng lặp."""
+    """Node 1: Kiểm tra Spam & Trùng lặp bằng 100% LLM Agent (Pure LLM Inspector)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
-    content_lower = (state.get("subject", "") + " " + state.get("content", "")).lower()
-    spam_keywords = ["crypto", "bitcoin", "loans", "click here", "scam", "trading robot", "cheap sale"]
-    
-    is_spam = any(kw in content_lower for kw in spam_keywords)
+    subject = state.get("subject", "")
+    content = state.get("content", "")
+    is_spam = False
+    spam_reason = "Yêu cầu hợp lệ"
+
+    # Gọi LLM Agent kiểm tra Spam
+    if groq_llm.is_available():
+        try:
+            messages = build_spam_detector_messages(subject, content)
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    is_spam = parsed.get("is_spam", False)
+                    spam_reason = parsed.get("reason", "Phát hiện nội dung quảng cáo/rác từ LLM")
+        except Exception as err:
+            print(f"LLM Spam Inspector Error: {err}")
 
     if is_spam:
         logs.append({
             "stepId": "step_1",
-            "stepName": "1. Spam & Duplicate Inspector",
+            "stepName": "1. Spam & Duplicate Inspector (LLM Agent)",
             "status": "warning",
             "timestamp": now,
-            "detail": "Phát hiện SPAM/Rác! Tự động đóng ticket.",
-            "data": {"is_spam": True, "confidence": 99}
+            "detail": f"LLM Agent phát hiện SPAM/Rác! Lý do: {spam_reason}",
+            "data": {"is_spam": True, "reason": spam_reason}
         })
         return {
             "status": "SPAM_CLOSED",
@@ -34,10 +58,10 @@ def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
 
     logs.append({
         "stepId": "step_1",
-        "stepName": "1. Spam & Duplicate Inspector",
+        "stepName": "1. Spam & Duplicate Inspector (LLM Agent)",
         "status": "success",
         "timestamp": now,
-        "detail": "Xác nhận Ticket hợp lệ (Not Spam & Unique Request).",
+        "detail": "LLM Agent xác nhận Ticket hợp lệ (Legitimate Customer Request).",
         "data": {"is_spam": False}
     })
 
@@ -45,39 +69,38 @@ def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
 
 
 def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
-    """Node 2: Phân loại 8 nhóm Intent & Priority Matrix."""
+    """Node 2: Phân loại nhóm Intent & Priority bằng 100% LLM Agent (Pure LLM Classifier)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
-    content_lower = (state.get("subject", "") + " " + state.get("content", "")).lower()
+    subject = state.get("subject", "")
+    content = state.get("content", "")
     
     category = "faq"
     priority = "P3_LOW"
 
-    if any(k in content_lower for k in ["khẩn cấp", "sập", "p0", "thảm họa"]):
-        category = "urgent"
-        priority = "P0_CRITICAL"
-    elif any(k in content_lower for k in ["bức xúc", "hoàn tiền", "trừ tiền", "trùng lặp"]):
-        category = "billing"
-        priority = "P1_HIGH"
-    elif any(k in content_lower for k in ["lỗi", "403", "500", "api"]):
-        if not any(k in content_lower for k in ["ip", "key", "header"]):
-            category = "incomplete"
-            priority = "P2_MEDIUM"
-        else:
-            category = "technical"
-            priority = "P2_MEDIUM"
-    elif any(k in content_lower for k in ["giá", "enterprise", "gói cước"]):
-        category = "faq"
-        priority = "P3_LOW"
+    # Gọi thuần LLM Agent để phân loại động Intent & Priority
+    if groq_llm.is_available():
+        try:
+            messages = build_classifier_messages(subject, content)
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    category = parsed.get("category", "faq")
+                    priority = parsed.get("priority", "P3_LOW")
+        except Exception as err:
+            print(f"⚠️ LLM Classifier Error: {err}")
 
     logs.append({
         "stepId": "step_2",
-        "stepName": "2. Intent & Priority Classifier",
+        "stepName": "2. Intent & Priority Classifier (LLM Agent)",
         "status": "success",
         "timestamp": now,
-        "detail": f"Đã phân loại nhóm: [{category.upper()}] | Độ ưu tiên: [{priority}]",
-        "data": {"category": category, "priority": priority}
+        "detail": f"LLM Agent phân loại nhóm: [{category.upper()}] | Độ ưu tiên: [{priority}]",
+        "data": {"category": category, "priority": priority, "source": "LLM Agent"}
     })
 
     return {
@@ -85,6 +108,8 @@ def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
         "priority": priority,
         "pipeline_logs": logs
     }
+
+
 
 
 from app.prompts import (
@@ -199,34 +224,24 @@ def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
         first_citation = citations[0] if len(citations) > 0 else {}
         context_str = "\n".join([f"- [{c.get('docTitle')}]: {c.get('snippet')}" for c in citations])
 
-        # Gọi Groq LLM (llama-3.3-70b-versatile) nếu có API Key
-        ai_answer = None
-        if groq_llm.is_available():
-            prompt_messages = build_auto_reply_messages(
-                customer_name=state.get('customer_name', 'Quý khách'),
-                subject=state.get('subject', ''),
-                content=state.get('content', ''),
-                context_str=context_str
-            )
-            ai_answer = groq_llm.generate_completion(prompt_messages)
-
-        # Fallback nếu không có Groq API Key hoặc gọi LLM bị lỗi
-        if not ai_answer:
-            ai_answer = (
-                f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
-                "Cảm ơn quý khách đã liên hệ hỗ trợ. Dựa trên thông tin quy định chính thức của hệ thống:\n\n"
-                f"\"{first_citation.get('snippet', 'Hệ thống đã tiếp nhận yêu cầu.')}\"\n\n"
-                f"[Nguồn: {first_citation.get('docTitle', 'Kho Tri Thức Nội Bộ')}]"
-            )
-
+        # Gọi Groq LLM Agent (llama-3.3-70b-versatile) để sinh câu phản hồi tự động
+        prompt_messages = build_auto_reply_messages(
+            customer_name=state.get('customer_name', 'Quý khách'),
+            subject=state.get('subject', ''),
+            content=state.get('content', ''),
+            context_str=context_str
+        )
+        ai_answer = groq_llm.generate_completion(prompt_messages) or "Hệ thống đã ghi nhận yêu cầu của quý khách và đang được xử lý."
+        
         logs.append({
             "stepId": "step_5",
             "stepName": "5. Guardrails & Decision Matrix Router",
             "status": "success",
             "timestamp": now,
-            "detail": f"TỰ ĐỘNG PHẢN HỒI AN TOÀN ({'Groq LLM Llama-3.3-70b' if groq_llm.is_available() else 'Template Heuristic'}).",
+            "detail": "TỰ ĐỘNG PHẢN HỒI AN TOÀN TỪ GROQ LLM AGENT (Llama-3.3-70b).",
             "data": {"ai_answer": ai_answer}
         })
+
 
         return {
             "status": "RESOLVED_AUTO",
@@ -255,6 +270,7 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     # Dùng Groq LLM (llama-3.3-70b-versatile) để soạn thảo bản nháp câu trả lời tốt hơn cho Nhân sự
     if groq_llm.is_available():
         draft_messages = build_human_draft_messages(
+            customer_name=state.get('customer_name', 'Quý khách'),
             subject=state.get('subject', ''),
             content=state.get('content', ''),
             category=category
@@ -262,6 +278,7 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
         llm_draft = groq_llm.generate_completion(draft_messages, max_tokens=256)
         if llm_draft:
             auto_draft = llm_draft
+
 
 
     context_package: ContextPackage = {

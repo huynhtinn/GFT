@@ -69,7 +69,7 @@ uv sync
 ### 2. Khởi chạy Backend Server & API
 ```powershell
 # Khởi chạy ứng dụng FastAPI + LangGraph + Qdrant
-uv run python run.py
+uv run python -m uvicorn app.main:app --reload --port 8000
 ```
 
 ### 3. Khởi chạy Giao diện Demo với Streamlit
