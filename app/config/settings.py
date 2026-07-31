@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     USE_RERANK: bool = Field(default=True, description="Enable Cohere Reranker")
 
     # THRESHOLDS & RAG SETTINGS
-    RAG_CONFIDENCE_THRESHOLD: float = Field(default=30.0, description="Ngưỡng tin cậy RAG % tối thiểu cho auto-resolve")
+    RAG_CONFIDENCE_THRESHOLD: float = Field(default=45.0, description="Ngưỡng tin cậy RAG % tối thiểu cho auto-resolve")
     RAG_SEARCH_LIMIT: int = Field(default=3, description="Số lượng trích đoạn tri thức cần lấy")
     RAG_CHUNK_SIZE: int = Field(default=800, description="Kích thước đoạn văn bản (ký tự) khi chia nhỏ tài liệu")
     RAG_CHUNK_OVERLAP: int = Field(default=150, description="Độ chồng chéo giữa các đoạn (ký tự) — 15-20% chunk_size để giữ ngữ nghĩa liên tục")

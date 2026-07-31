@@ -17,6 +17,9 @@ env
 # Databases
 app.db
 *.db
+*.db-wal
+*.db-shm
+user.db*
 users_db.json
 
 # Project specific

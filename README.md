@@ -1,156 +1,94 @@
-# 🤖 GFT — Autonomous Customer Support Agent System
+# 🤖 AUTOMATION/AGENT — Tổng đài Hỗ trợ Tự vận hành
 
-Hệ thống Tổng Đài Hỗ Trợ Khách Hàng Tự Vận Hành nâng cao ứng dụng kiến trúc **LangGraph Multi-Agent State Machine**, **Qdrant Vector Database**, **SentenceTransformers Semantic Embedding**, **Cohere Rerank**, **Groq Cloud Llama-3.3-70B** và giao diện **Streamlit Role-Based Dashboard**.
+Hệ thống Chăm sóc Khách hàng Tự vận hành ứng dụng kiến trúc **LangGraph State Machine Multi-Agent**, **Vector Database Qdrant** và quản lý môi trường bằng **`uv`**.
 
 ---
 
-## 🌟 Ý Tưởng & Kiến Trúc Hệ Thống (Core Concept)
+## 🌟 Ý tưởng & Kiến trúc Hệ thống (Core Concept)
 
-Hệ thống tiếp nhận yêu cầu hỗ trợ đa kênh (*Website, Email, Zalo, Internal*), tự động thực hiện quy trình xử lý thông minh qua 9 nút (nodes) Multi-Agent:
+Hệ thống tiếp nhận yêu cầu hỗ trợ đa kênh (Website, Email, Zalo/Messenger, Hệ thống Nội bộ), tự động phân loại, kiểm tra độ tin cậy tri thức từ Qdrant Vector DB kèm dẫn nguồn (Citations), tự động trả lời với case an toàn và chuyển giao cho nhân sự (Human-in-the-Loop) khi phát hiện rủi ro hoặc sự cố khẩn cấp.
+
+### 5 Tầng Xử Lý Multi-Agent:
 
 ```mermaid
 flowchart TD
-    Ingestion[Tầng Tiếp Nhận Ticket] --> Graph[LangGraph Multi-Agent Engine]
+    Ingestion[Tầng 1: Tiếp nhận Đa kênh REST API] --> Graph[LangGraph State Machine Engine]
     
-    subgraph Graph["LangGraph State Machine Pipeline"]
-        N1[1. Spam & Duplicate Check] -->|Legitimate| N2[2. Intent & Priority Classifier]
-        N1 -->|Spam| END1[SPAM_CLOSED]
+    subgraph Graph["LangGraph Nodes"]
+        N1[1. Spam & Duplicate Check] --> N2[2. Intent & Priority Classifier]
         N2 --> N3[3. Slot Completeness Inspector]
-        N3 -->|Missing Info| END2[CLARIFICATION_SENT]
-        N3 -->|Complete| N4[4. Supervisor Agent Coordinator]
-        N4 --> N5[5. Query Optimizer & Expander]
-        N5 --> N6[6. Qdrant RAG + Cohere Rerank]
-        N6 --> N7[7. Reasoning & CoT Thought Layer]
-        N7 --> N8[8. Guardrails & Decision Matrix Router]
-        N8 -->|Safe Auto-Reply| END3[RESOLVED_AUTO]
-        N8 -->|High Risk / Low Confidence| N9[9. HITL Briefing Generator]
-        N9 --> END4[ESCALATED_HUMAN]
+        N3 --> N4[4. Qdrant Vector RAG Search]
+        N4 --> N5[5. Guardrails & Decision Router]
+        N5 --> N6[6. HITL Context Briefing Generator]
     end
 
-    N6 <--> Qdrant[(Qdrant Vector DB)]
-    N6 <--> Cohere[Cohere Rerank API]
-    N7 <--> Groq[Groq Llama-3.3-70B]
+    N4 <--> Qdrant[(Qdrant Vector DB)]
+    N5 -->|Auto-Resolved| Reply[Phản hồi Tự động kèm Citation]
+    N5 -->|Escalated| HITL[Human Agent Workspace]
 ```
 
-### 🧠 Các Nút Xử Lý Chi Tiết:
-
-1. **Spam & Duplicate Inspector**: LLM Agent kiểm tra rác, quảng cáo lừa đảo hoặc nội dung vô nghĩa với `json_mode=True`.
-2. **Intent & Priority Classifier**: LLM Agent phân loại yêu cầu (`faq`, `technical`, `billing`, `urgent`, `complaint`) và ma trận độ ưu tiên (`P0_CRITICAL` đến `P3_LOW`).
-3. **Slot Completeness Inspector**: Kiểm tra các trường thông tin bắt buộc và tự động tạo câu hỏi làm rõ (Clarification Loop).
-4. **Supervisor Agent Coordinator**: Đưa ra chiến lược xử lý động, quyết định phong cách phản hồi (`formal`, `technical`, `empathetic`) và yêu cầu leo thang.
-5. **Query Optimizer & Expander**: Viết lại truy vấn (Query Rewriter) và sinh ra 3 câu truy vấn mở rộng (Query Expansion) bằng thuật ngữ tương đương.
-6. **Qdrant RAG & Cohere Reranker Engine**:
-   - Semantic Embedding với `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dims, Cosine similarity).
-   - Tách đoạn ngữ nghĩa thông minh với `RecursiveCharacterTextSplitter` (chunk_size=800, overlap=150).
-   - Point ID ổn định tuyệt đối bằng SHA-256 hash.
-   - Tái xếp hạng kết quả bằng Cohere Rerank (`rerank-multilingual-v3.0`).
-7. **Reasoning & Thought Layer**: Tạo vết suy luận lập luận từng bước (Chain-of-Thought) trước khi đưa ra câu trả lời chính thức.
-8. **Guardrails Matrix Router**: Đánh giá rủi ro và độ tin cậy để điều hướng tự động phản hồi (`RESOLVED_AUTO`) hoặc chuyển giao nhân sự (`ESCALATED_HUMAN`).
-9. **HITL Context Briefing Generator**: Soạn thảo gói thông tin tóm tắt cho nhân sự gồm lý do leo thang, thái độ khách hàng, hành động đề xuất và bản nháp trả lời tự động.
+1. **Spam & Duplicate Inspector**: Lọc rác và ticket trùng lặp.
+2. **Intent & Priority Classifier**: Phân loại 8 nhóm yêu cầu (`FAQ`, `Khiếu nại`, `Kỹ thuật`, `Thanh toán`, `Khẩn cấp P0`, `Spam`, `Trùng lặp`, `Thiếu thông tin`) và ma trận độ ưu tiên (`P0_CRITICAL` đến `P3_LOW`).
+3. **Slot Completeness Inspector**: Kiểm tra missing parameters và kích hoạt Clarification Loop tự động làm rõ.
+4. **Qdrant Vector RAG Search**: Tra cứu Vector Search trên Qdrant DB, tính Grounding Confidence Score % và trích dẫn nguồn `[Nguồn: Document - Mục X]`.
+5. **Guardrails Router & HITL Briefing**: Router quyết định tự động trả lời hay chuyển giao sang Nhân sự kèm **AI Context Briefing Package**.
 
 ---
 
-## 📁 Cấu Trúc Dự Án (Project Structure)
+## 📁 Cấu trúc Dự án (Project Structure)
 
 ```text
-GFT/
+F:\GFT
 ├── app/
 │   ├── api/
-│   │   └── router.py          # FastAPI RESTful Endpoints (Tickets, KB, HITL)
-│   ├── config/
-│   │   └── settings.py        # Pydantic Settings đọc cấu hình từ .env
+│   │   └── router.py          # RESTful APIs (Tickets, Qdrant KB, HITL, Dashboard)
 │   ├── graph/
-│   │   ├── state.py           # SupportState TypedDict cho LangGraph Engine
-│   │   ├── nodes.py           # 9 Nodes xử lý Multi-Agent & Guardrails
-│   │   └── builder.py         # Lắp ráp StateGraph & MemorySaver Checkpointer
-│   ├── prompts/
-│   │   └── support_prompts.py # Prompts chuẩn hóa cho các Agent
+│   │   ├── state.py           # SupportState TypedDict cho LangGraph
+│   │   ├── nodes.py           # 6 Nodes xử lý Multi-Agent
+│   │   └── builder.py         # StateGraph builder & Checkpointer
 │   ├── services/
-│   │   ├── auth_service.py    # SQLite DB (WAL Mode), Authentication & Ticket Sync
-│   │   ├── llm_service.py     # Groq API Service (Retry, Exponential Backoff, JSON Mode)
-│   │   └── qdrant_service.py  # Qdrant Vector DB Engine, Embedding & Auto-Seeding
-│   └── main.py                # FastAPI Application & /health Probe Endpoint
-├── knowledge_base/            # Thư mục chứa 15 file tri thức chuẩn (.txt)
-│   ├── billing/
-│   ├── emergency/
-│   ├── faq/
-│   └── technical/
-├── app_streamlit.py           # Streamlit Web App (Phân quyền Admin vs Customer)
-├── pyproject.toml             # Cấu hình môi trường Python ( Astral uv )
-├── Dockerfile                 # Dockerfile tối ưu (Pre-baked Embedding Model)
-├── docker-compose.yml         # Container Orchestration (App + Qdrant DB)
-├── .env.example               # Mẫu khai báo biến môi trường
+│   │   └── qdrant_service.py  # Qdrant Client, HNSW Vector Collection & RAG Search
+│   └── main.py                # FastAPI Application & Startup Event
+├── pyproject.toml             # Cấu hình môi trường Python 3.10+ quản lý bởi uv
+├── uv.lock                    # Dependency lockfile sinh bởi uv
+├── run.py                     # Script khởi chạy nhanh Backend Server
+├── index.html                 # Giao diện Dashboard Web Demo tương tác
 └── README.md                  # Tài liệu hướng dẫn hệ thống
 ```
 
 ---
 
-## ⚡ Hướng Dẫn Khởi Chạy (Quickstart)
+## ⚡ Hướng dẫn Khởi chạy (Usage Guide)
 
-### Cách 1: Khởi chạy với `uv` (Khuyên dùng cho phát triển Local)
-
-1. **Cài đặt môi trường & dependencies**:
-   ```bash
-   uv sync
-   ```
-
-2. **Cấu hình file `.env`**:
-   Tạo file `.env` từ `.env.example` và điền API Keys:
-   ```env
-   GROQ_API_KEY=gsk_your_groq_api_key_here
-   COHERE_API_KEY=your_cohere_api_key_here
-   QDRANT_URL=http://localhost:6333
-   ```
-
-3. **Khởi chạy Qdrant Docker** *(nếu dùng Qdrant server)*:
-   ```bash
-   docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant:v1.12.0
-   ```
-
-4. **Khởi chạy ứng dụng Streamlit**:
-   ```bash
-   uv run streamlit run app_streamlit.py
-   ```
-   *Truy cập ứng dụng tại:* `http://localhost:8501`
-
-5. **Khởi chạy FastAPI Backend (Tùy chọn)**:
-   ```bash
-   uv run python -m uvicorn app.main:app --reload --port 8000
-   ```
-   *Truy cập Swagger API Docs tại:* `http://localhost:8000/docs`
-
----
-
-### Cách 2: Triển khai toàn bộ với Docker Compose (Production Setup)
-
-```bash
-# Khởi chạy toàn bộ hệ thống (App + Vector DB Qdrant)
-docker-compose up --build -d
+### 1. Cài đặt Dependencies với `uv`
+```powershell
+# Cài đặt môi trường & thư viện tự động từ pyproject.toml
+uv sync
 ```
 
+### 2. Khởi chạy Backend Server & API
+```powershell
+# Khởi chạy ứng dụng FastAPI + LangGraph + Qdrant
+uv run python -m uvicorn app.main:app --reload --port 8000
+```
+
+### 3. Khởi chạy Giao diện Demo với Streamlit
+```powershell
+# Khởi chạy ứng dụng Streamlit Dashboard
+uv run streamlit run app_streamlit.py
+```
+
+- **Swagger API Docs**: `http://localhost:8000/docs`
+- **Giao diện Streamlit App**: `http://localhost:8501`
+- **Giao diện Web HTML Demo**: Mở file [index.html](file:///f:/GFT/index.html) bằng trình duyệt web.
+
 ---
 
-## 🔐 Phân Quyền Nổi Bật Trên Streamlit Dashboard
+## 🛠️ Công nghệ Sử dụng
+- **Python**: 3.10+
+- **Environment & Dependency Manager**: Astral `uv`
+- **Multi-Agent State Machine**: LangGraph (`langgraph`, `langchain-core`)
+- **Vector Database**: Qdrant (`qdrant-client` với HNSW Index & Cosine Distance)
+- **Web API & Dashboard Engine**: FastAPI (`uvicorn`, `pydantic`), Streamlit (`streamlit`)
 
-| Tính Năng | Khách Hàng (Customer) | Nhân Sự / Admin |
-|-----------|:---------------------:|:---------------:|
-| **Gửi Ticket Hỗ Trợ** | ✅ (Kênh Web, Email, Zalo) | ✅ (Kênh Nội Bộ - Internal) |
-| **Kịch Bản Mẫu (Presets)** | ✅ | ✅ |
-| **Trích Dẫn Tri Thức (Citations)** | ❌ (Ẩn để bảo mật) | ✅ Hiển thị đầy đủ score & snippet |
-| **Bộ Điều Phối Supervisor & Optimizer** | ❌ (Ẩn) | ✅ Hiển thị chi tiết lập luận |
-| **Reasoning Trace (Vết Suy Luận)** | ❌ (Ẩn) | ✅ Hiển thị từng bước suy luận CoT |
-| **Hàng Chờ Phê Duyệt Escalations** | ❌ | ✅ Phê duyệt & chỉnh sửa câu trả lời |
-| **Quản Lý Knowledge Base** | ❌ | ✅ Upload file PDF/Docx/JSON & Index vào Qdrant |
-
----
-
-## 🛠️ Công Nghệ Sử Dụng
-
-- **Core Engine**: Python 3.10+, Astral `uv`
-- **Multi-Agent Framework**: LangGraph (`langgraph`, `langchain-core`, `langchain-text-splitters`)
-- **Semantic Embedding**: `sentence-transformers` (`paraphrase-multilingual-MiniLM-L12-v2` - 384 dims)
-- **Vector Database**: Qdrant (`qdrant-client` với Cosine Distance & HNSW Index)
-- **Reranker Engine**: Cohere Rerank API (`rerank-multilingual-v3.0`)
-- **LLM Engine**: Groq Cloud API (`llama-3.3-70b-versatile`)
-- **Persistence & Auth**: SQLite 3 (WAL Journal Mode & Busy Timeout)
-- **UI & Web Framework**: Streamlit, FastAPI, Uvicorn, Pydantic v2
+uv run python -m streamlit run app_streamlit.py

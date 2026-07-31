@@ -1,12 +1,10 @@
 import streamlit as st
 import json
-import uuid
-import html
-import os
 from datetime import datetime
 from app.graph.builder import support_agent_graph
 from app.services.qdrant_service import qdrant_kb
 from app.config.settings import settings
+import os
 # Cấu hình Trang Streamlit
 st.set_page_config(
     page_title="Hệ Thống Hỗ Trợ Tự Vận Hành — LangGraph & Qdrant",
@@ -345,7 +343,7 @@ if "Tiếp Nhận Ticket" in page:
             "email": "khachhang@gmail.com",
             "channel": "web",
             "subject": "Hỏi về bảng giá gói Enterprise",
-            "content": "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026."
+            "content": "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise."
         }
 
     # Hàng 1
@@ -501,7 +499,7 @@ if "Tiếp Nhận Ticket" in page:
 
 
     if submitted:
-        ticket_id = f"TCK-{uuid.uuid4().hex[:8].upper()}"
+        ticket_id = f"TCK-{hash(datetime.now().isoformat()) % 9000 + 1000}"
         
         initial_state = {
             "ticket_id": ticket_id,
@@ -515,7 +513,7 @@ if "Tiếp Nhận Ticket" in page:
             "pipeline_logs": []
         }
 
-        with st.spinner("LangGraph Multi-Agent Engine đang thực thi luồng xử lý..."):
+        with st.spinner("Hệ thống đang thực thi luồng xử lý..."):
             config = {"configurable": {"thread_id": ticket_id}}
             final_state = support_agent_graph.invoke(initial_state, config=config)
 

@@ -191,8 +191,8 @@ def supervisor_node(state: SupportState) -> Dict[str, Any]:
         except Exception as err:
             print(f"Supervisor Agent Error: {err}")
 
-    # Đồng bộ nếu thuộc nhóm cần escalation
-    is_high_risk = priority == "P0_CRITICAL" or category in ["complaint", "billing", "urgent"]
+    # Đồng bộ nếu thuộc nhóm bắt buộc cần escalation (P0_CRITICAL, Khiếu nại, Khẩn cấp)
+    is_high_risk = priority == "P0_CRITICAL" or category in ["complaint", "urgent"]
     if is_high_risk:
         decision["escalation_required"] = True
 

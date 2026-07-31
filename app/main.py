@@ -38,13 +38,5 @@ def root():
         "api_endpoint": "/api/tickets"
     }
 
-@app.get("/health")
-def health_check():
-    """Health check endpoint cho Docker / Kubernetes container probes."""
-    return {
-        "status": "healthy",
-        "service": "GFT Autonomous Support Agent"
-    }
-
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
