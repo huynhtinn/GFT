@@ -10,7 +10,10 @@ from app.prompts.support_prompts import (
     build_human_draft_messages,
     build_clarification_question,
     build_classifier_messages,
-    build_spam_detector_messages
+    build_spam_detector_messages,
+    build_query_optimizer_messages,
+    build_supervisor_messages,
+    build_reasoning_messages
 )
 
 def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
@@ -92,7 +95,7 @@ def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
                     category = parsed.get("category", "faq")
                     priority = parsed.get("priority", "P3_LOW")
         except Exception as err:
-            print(f"⚠️ LLM Classifier Error: {err}")
+            print(f"LLM Classifier Error: {err}")
 
     logs.append({
         "stepId": "step_2",
@@ -157,30 +160,169 @@ def slot_completeness_inspector_node(state: SupportState) -> Dict[str, Any]:
     return {"pipeline_logs": logs}
 
 
+def supervisor_node(state: SupportState) -> Dict[str, Any]:
+    """Node: Agent Supervisor phân tích và điều phối luồng xử lý động."""
+    now = datetime.now().isoformat()
+    logs = list(state.get("pipeline_logs", []))
+
+    subject = state.get("subject", "")
+    content = state.get("content", "")
+    category = state.get("category", "")
+    priority = state.get("priority", "")
+
+    # Mặc định quyết định
+    decision = {
+        "reasoning": "Sử dụng cấu hình mặc định do LLM không phản hồi.",
+        "response_style": "formal",
+        "reasoning_depth": "shallow",
+        "escalation_required": False
+    }
+
+    if groq_llm.is_available():
+        try:
+            messages = build_supervisor_messages(subject, content, category, priority)
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    decision = parsed
+        except Exception as err:
+            print(f"Supervisor Agent Error: {err}")
+
+    # Đồng bộ nếu thuộc nhóm cần escalation
+    is_high_risk = priority == "P0_CRITICAL" or category in ["complaint", "billing", "urgent"]
+    if is_high_risk:
+        decision["escalation_required"] = True
+
+    logs.append({
+        "stepId": "step_supervisor",
+        "stepName": "Supervisor Decision Coordinator",
+        "status": "success",
+        "timestamp": now,
+        "detail": f"Supervisor đã điều phối. Chuyển tiếp con người: {decision.get('escalation_required')}, Phong cách: {decision.get('response_style')}",
+        "data": {"decision": decision}
+    })
+
+    return {
+        "supervisor_decision": decision,
+        "pipeline_logs": logs
+    }
+
+
+def query_optimizer_node(state: SupportState) -> Dict[str, Any]:
+    """Node: Tối ưu hóa câu hỏi (Query Rewriter & Query Expansion)."""
+    now = datetime.now().isoformat()
+    logs = list(state.get("pipeline_logs", []))
+
+    subject = state.get("subject", "")
+    content = state.get("content", "")
+
+    # Mặc định
+    rewritten_query = f"{subject} {content}"
+    expanded_queries = [subject, content]
+
+    if groq_llm.is_available():
+        try:
+            messages = build_query_optimizer_messages(subject, content)
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    rewritten_query = parsed.get("rewritten_query", rewritten_query)
+                    expanded_queries = parsed.get("expanded_queries", expanded_queries)
+        except Exception as err:
+            print(f"Query Optimizer Agent Error: {err}")
+
+    logs.append({
+        "stepId": "step_optimizer",
+        "stepName": "Query Optimizer & Expander",
+        "status": "success",
+        "timestamp": now,
+        "detail": f"Đã tối ưu truy vấn thành công. Viết lại: '{rewritten_query[:60]}...'",
+        "data": {
+            "rewritten_query": rewritten_query,
+            "expanded_queries": expanded_queries
+        }
+    })
+
+    return {
+        "rewritten_query": rewritten_query,
+        "expanded_queries": expanded_queries,
+        "pipeline_logs": logs
+    }
+
+
 
 from app.config.settings import settings
 
 def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
-    """Node 4: Thực hiện Qdrant Vector DB Retrieval & Grounding Citations."""
+    """Node 4: Thực hiện Qdrant Vector DB Retrieval & Grounding Citations (Multi-Query + Rerank)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
-    query = f"{state.get('subject', '')} {state.get('content', '')}"
+    # Lấy các câu truy vấn từ Query Optimizer
+    rewritten_query = state.get("rewritten_query")
+    expanded_queries = state.get("expanded_queries", [])
     
-    # Query Qdrant Vector Collection
-    citations = qdrant_kb.search_relevant_chunks(query, limit=settings.RAG_SEARCH_LIMIT)
+    if not rewritten_query:
+        rewritten_query = f"{state.get('subject', '')} {state.get('content', '')}"
+
+    # Pool các truy vấn để tìm kiếm
+    queries_to_run = [rewritten_query]
+    if expanded_queries:
+        queries_to_run.extend(expanded_queries)
     
+    # Độc lập lấy API Key
+    effective_api_key = state.get("cohere_api_key") or settings.COHERE_API_KEY
+    use_rerank = settings.USE_RERANK and bool(effective_api_key)
+
+    # Thực hiện Multi-Query Retrieval
+    all_citations = []
+    # Giới hạn tối đa 4 truy vấn chạy để tránh latency cao
+    for q in queries_to_run[:4]:
+        raw_chunks = qdrant_kb.search_relevant_chunks(q, limit=settings.RAG_SEARCH_LIMIT * 2, cohere_api_key=None)
+        all_citations.extend(raw_chunks)
+
+    # Loại bỏ trùng lặp (De-duplicate) bằng docId + snippet
+    unique_citations = []
+    seen_keys = set()
+    for c in all_citations:
+        key = f"{c.get('docId')}_{c.get('snippet')}"
+        if key not in seen_keys:
+            seen_keys.add(key)
+            unique_citations.append(c)
+
+    # Tái xếp hạng (Rerank) toàn bộ danh sách gộp bằng Cohere Rerank
+    if use_rerank and unique_citations:
+        citations = qdrant_kb.rerank_citations(rewritten_query, unique_citations, cohere_api_key=effective_api_key)
+    else:
+        citations = unique_citations
+        # Sắp xếp theo score mặc định của Qdrant nếu không rerank
+        citations.sort(key=lambda x: x.get("relevanceScore", 0.0), reverse=True)
+
+    # Lấy Top limit kết quả tốt nhất
+    citations = citations[:settings.RAG_SEARCH_LIMIT]
+
     best_score = max([c["relevanceScore"] for c in citations], default=0.55)
-    # Chuẩn hóa điểm tin cậy từ điểm tương đồng Cosine
     confidence_score = min(98.5, round(best_score * 160, 1)) if best_score > 0.4 else round(best_score * 100, 1)
 
+    rerank_status_str = f" (Multi-Query Rerank: {len(queries_to_run)} queries)" if use_rerank else " (Không Rerank)"
     logs.append({
         "stepId": "step_4",
         "stepName": "4. Qdrant Vector RAG & Grounding Engine",
         "status": "success" if len(citations) > 0 else "warning",
         "timestamp": now,
-        "detail": f"Tìm thấy {len(citations)} đoạn tri thức từ Qdrant DB. Grounding Confidence: {confidence_score}%",
-        "data": {"citationsCount": len(citations), "confidence_score": confidence_score}
+        "detail": f"Tìm thấy {len(citations)} đoạn tri thức tối ưu{rerank_status_str}. Grounding Confidence: {confidence_score}%",
+        "data": {
+            "citationsCount": len(citations), 
+            "confidence_score": confidence_score, 
+            "rerank_active": use_rerank,
+            "queries_run": queries_to_run
+        }
     })
 
     return {
@@ -190,21 +332,81 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
     }
 
 
+def reasoning_node(state: SupportState) -> Dict[str, Any]:
+    """Node: Thực hiện Chain-of-Thought suy luận logic trước khi sinh câu trả lời."""
+    now = datetime.now().isoformat()
+    logs = list(state.get("pipeline_logs", []))
+
+    subject = state.get("subject", "")
+    content = state.get("content", "")
+    category = state.get("category", "")
+    priority = state.get("priority", "")
+    citations = state.get("citations", [])
+    supervisor_decision = state.get("supervisor_decision", {})
+
+    # Chuẩn bị context tri thức
+    context_str = ""
+    if citations:
+        context_str = "\n".join([f"[{c['docId']}] {c['docTitle']} (Mục {c['section']}):\n{c['snippet']}" for c in citations])
+    else:
+        context_str = "Không tìm thấy tài liệu liên quan."
+
+    # Lập luận mặc định
+    reasoning_steps = ["Bước 1: Không có mô hình LLM để suy luận. Sử dụng phương án phản hồi mặc định."]
+    reasoning_output = "Hệ thống đã nhận thông tin và đang xử lý yêu cầu."
+
+    if groq_llm.is_available():
+        try:
+            messages = build_reasoning_messages(subject, content, category, priority, context_str, supervisor_decision)
+            # Dùng temperature thấp để suy luận chính xác, bám sát tài liệu
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1, max_tokens=1536)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    reasoning_steps = parsed.get("reasoning_steps", reasoning_steps)
+                    reasoning_output = parsed.get("reasoning_output", reasoning_output)
+        except Exception as err:
+            print(f"Reasoning Agent Error: {err}")
+
+    logs.append({
+        "stepId": "step_reasoning",
+        "stepName": "Reasoning & Thought Layer",
+        "status": "success",
+        "timestamp": now,
+        "detail": f"AI hoàn thành {len(reasoning_steps)} bước lập luận logic thành công.",
+        "data": {
+            "reasoning_steps": reasoning_steps,
+            "reasoning_output": reasoning_output
+        }
+    })
+
+    return {
+        "reasoning_trace": reasoning_steps,
+        "reasoning_output": reasoning_output,
+        "pipeline_logs": logs
+    }
+
+
 def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
-    """Node 5: Router đánh giá ngưỡng an toàn & sinh câu trả lời bằng Groq LLM (llama-3.3-70b-versatile)."""
+    """Node 5: Router đánh giá ngưỡng an toàn & sinh câu trả lời."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
     category = state.get("category", "")
     priority = state.get("priority", "")
     confidence_score = state.get("confidence_score", 0.0)
-    citations = state.get("citations", [])
+    supervisor_decision = state.get("supervisor_decision", {})
+    reasoning_output = state.get("reasoning_output", "")
 
-    is_high_risk = priority == "P0_CRITICAL" or category in ["complaint", "billing", "urgent"]
+    # Đọc quyết định từ Supervisor Agent
+    escalation_required = supervisor_decision.get("escalation_required", False)
+    is_high_risk = escalation_required or priority == "P0_CRITICAL" or category in ["complaint", "urgent"]
     is_low_confidence = confidence_score < settings.RAG_CONFIDENCE_THRESHOLD
 
     if is_high_risk or is_low_confidence:
-        reason = "Sự cố P0 khẩn cấp / Giao dịch tài chính rủi ro cao" if is_high_risk else f"Độ tin cậy RAG < {settings.RAG_CONFIDENCE_THRESHOLD}%"
+        reason = "Supervisor quyết định chuyển tiếp / Sự cố P0 / Khiếu nại / Khẩn cấp" if is_high_risk else f"Độ tin cậy RAG < {settings.RAG_CONFIDENCE_THRESHOLD}%"
         
         logs.append({
             "stepId": "step_5",
@@ -215,33 +417,22 @@ def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
             "data": {"escalation_reason": reason}
         })
 
-
         return {
             "status": "ESCALATED_HUMAN",
             "pipeline_logs": logs
         }
     else:
-        first_citation = citations[0] if len(citations) > 0 else {}
-        context_str = "\n".join([f"- [{c.get('docTitle')}]: {c.get('snippet')}" for c in citations])
-
-        # Gọi Groq LLM Agent (llama-3.3-70b-versatile) để sinh câu phản hồi tự động
-        prompt_messages = build_auto_reply_messages(
-            customer_name=state.get('customer_name', 'Quý khách'),
-            subject=state.get('subject', ''),
-            content=state.get('content', ''),
-            context_str=context_str
-        )
-        ai_answer = groq_llm.generate_completion(prompt_messages) or "Hệ thống đã ghi nhận yêu cầu của quý khách và đang được xử lý."
+        # Lấy câu trả lời đã suy luận từ Reasoning Layer
+        ai_answer = reasoning_output if reasoning_output else "Hệ thống đã ghi nhận yêu cầu của quý khách và đang được xử lý."
         
         logs.append({
             "stepId": "step_5",
             "stepName": "5. Guardrails & Decision Matrix Router",
             "status": "success",
             "timestamp": now,
-            "detail": "TỰ ĐỘNG PHẢN HỒI AN TOÀN TỪ GROQ LLM AGENT (Llama-3.3-70b).",
+            "detail": f"TỰ ĐỘNG PHẢN HỒI AN TOÀN DỰA TRÊN LẬP LUẬN (Phong cách: {supervisor_decision.get('response_style', 'formal')}).",
             "data": {"ai_answer": ai_answer}
         })
-
 
         return {
             "status": "RESOLVED_AUTO",
@@ -255,6 +446,8 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     category = state.get("category", "")
     priority = state.get("priority", "")
     confidence_score = state.get("confidence_score", 75.0)
+    reasoning_output = state.get("reasoning_output", "")
+    reasoning_trace = state.get("reasoning_trace", [])
 
     sentiment = "Bình thường"
     if priority == "P0_CRITICAL":
@@ -262,31 +455,32 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     elif priority == "P1_HIGH":
         sentiment = "Bức xúc"
 
-    auto_draft = (
-        f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
-        "Hệ thống đã tiếp nhận thông tin yêu cầu. Nhân viên hỗ trợ đang kiểm tra và sẽ phản hồi quý khách sớm nhất."
-    )
-
-    # Dùng Groq LLM (llama-3.3-70b-versatile) để soạn thảo bản nháp câu trả lời tốt hơn cho Nhân sự
-    if groq_llm.is_available():
-        draft_messages = build_human_draft_messages(
-            customer_name=state.get('customer_name', 'Quý khách'),
-            subject=state.get('subject', ''),
-            content=state.get('content', ''),
-            category=category
+    # Sử dụng reasoning_output hoặc soạn nháp nếu trống
+    auto_draft = reasoning_output
+    if not auto_draft:
+        auto_draft = (
+            f"Kính chào {state.get('customer_name', 'quý khách')},\n\n"
+            "Hệ thống đã tiếp nhận thông tin yêu cầu. Nhân viên hỗ trợ đang kiểm tra và sẽ phản hồi quý khách sớm nhất."
         )
-        llm_draft = groq_llm.generate_completion(draft_messages, max_tokens=256)
-        if llm_draft:
-            auto_draft = llm_draft
-
-
+        if groq_llm.is_available():
+            draft_messages = build_human_draft_messages(
+                customer_name=state.get('customer_name', 'Quý khách'),
+                subject=state.get('subject', ''),
+                content=state.get('content', ''),
+                category=category
+            )
+            llm_draft = groq_llm.generate_completion(draft_messages, max_tokens=256)
+            if llm_draft:
+                auto_draft = llm_draft
 
     context_package: ContextPackage = {
         "summary": f"Yêu cầu nhóm [{category.upper()}]. Tiêu đề: {state.get('subject', '')}",
         "sentiment": sentiment,
         "triedSteps": [
             f"Phân loại Intent: {category} (Độ ưu tiên {priority})",
-            f"Tra cứu Qdrant Vector DB: Tìm thấy {len(state.get('citations', []))} tài liệu liên quan",
+            f"Đã tối ưu và mở rộng các truy vấn phụ",
+            f"Tra cứu Qdrant + Rerank: Lấy Top {len(state.get('citations', []))} tài liệu tri thức",
+            f"Lập luận hệ thống CoT: Hoàn thành {len(reasoning_trace)} bước suy luận",
             "Kích hoạt LangGraph Human Escalation"
         ],
         "recommendedAction": "Cảnh báo ca trực DevOps kiểm tra máy chủ" if priority == "P0_CRITICAL" else "Đối soát giao dịch và phản hồi khách hàng.",

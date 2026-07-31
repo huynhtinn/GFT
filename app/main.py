@@ -26,8 +26,8 @@ app.include_router(api_router)
 def startup_event():
     """Khởi tạo seed data cho Qdrant Vector DB và Tickets DB."""
     seed_initial_kb()
-    print("✅ [Qdrant Vector DB] Initialized & Seeded successfully.")
-    print("🚀 [LangGraph Multi-Agent Engine] State Machine ready.")
+    print("[Qdrant Vector DB] Initialized & Seeded successfully.")
+    print("[LangGraph Multi-Agent Engine] State Machine ready.")
 
 @app.get("/")
 def root():

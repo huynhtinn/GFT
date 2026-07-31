@@ -25,9 +25,16 @@ class Settings(BaseSettings):
     VECTOR_DIM: int = Field(default=384, description="Vector embedding dimension")
     QDRANT_TIMEOUT_SECONDS: float = Field(default=3.0, description="Qdrant connection timeout")
 
+    # COHERE RERANKER SETTINGS
+    COHERE_API_KEY: str = Field(default="", description="Cohere API key")
+    COHERE_MODEL: str = Field(default="rerank-multilingual-v3.0", description="Cohere Rerank model name")
+    USE_RERANK: bool = Field(default=True, description="Enable Cohere Reranker")
+
     # THRESHOLDS & RAG SETTINGS
     RAG_CONFIDENCE_THRESHOLD: float = Field(default=30.0, description="Ngưỡng tin cậy RAG % tối thiểu cho auto-resolve")
     RAG_SEARCH_LIMIT: int = Field(default=3, description="Số lượng trích đoạn tri thức cần lấy")
+    RAG_CHUNK_SIZE: int = Field(default=800, description="Kích thước đoạn văn bản (ký tự) khi chia nhỏ tài liệu")
+    RAG_CHUNK_OVERLAP: int = Field(default=50, description="Độ chồng chéo giữa các đoạn (ký tự)")
 
 
 @lru_cache
@@ -35,6 +42,8 @@ def get_settings() -> Settings:
     settings = Settings()
     if settings.GROQ_API_KEY:
         settings.GROQ_API_KEY = settings.GROQ_API_KEY.strip()
+    if settings.COHERE_API_KEY:
+        settings.COHERE_API_KEY = settings.COHERE_API_KEY.strip()
     return settings
 
 # Singleton settings instance

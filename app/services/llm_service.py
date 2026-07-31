@@ -29,7 +29,7 @@ class GroqLLMService:
     ) -> Optional[str]:
         """Gửi yêu cầu Chat Completion tới Groq API."""
         if not self.is_available():
-            print("⚠️ GROQ_API_KEY chưa được cấu hình. Sử dụng Fallback heuristic.")
+            print("GROQ_API_KEY chưa được cấu hình. Sử dụng Fallback heuristic.")
             return None
 
         target_model = model or self.default_model
@@ -63,9 +63,9 @@ class GroqLLMService:
                         return choices[0].get("message", {}).get("content", "").strip()
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8", errors="ignore")
-            print(f"❌ [Groq API Error {e.code}]: {error_body}")
+            print(f"[Groq API Error {e.code}]: {error_body}")
         except Exception as e:
-            print(f"❌ [Groq API Connection Error]: {e}")
+            print(f"[Groq API Connection Error]: {e}")
 
         return None
 

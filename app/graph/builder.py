@@ -6,7 +6,10 @@ from app.graph.nodes import (
     spam_duplicate_detector_node,
     intent_priority_classifier_node,
     slot_completeness_inspector_node,
+    supervisor_node,
+    query_optimizer_node,
     qdrant_rag_retrieval_node,
+    reasoning_node,
     guardrails_router_node,
     hitl_briefing_generator_node
 )
@@ -37,7 +40,10 @@ def build_support_agent_graph():
     builder.add_node("spam_check", spam_duplicate_detector_node)
     builder.add_node("classify", intent_priority_classifier_node)
     builder.add_node("slot_check", slot_completeness_inspector_node)
+    builder.add_node("supervisor", supervisor_node)
+    builder.add_node("query_optimize", query_optimizer_node)
     builder.add_node("rag_search", qdrant_rag_retrieval_node)
+    builder.add_node("reasoning", reasoning_node)
     builder.add_node("guardrails", guardrails_router_node)
     builder.add_node("briefing", hitl_briefing_generator_node)
 
@@ -61,11 +67,15 @@ def build_support_agent_graph():
         should_continue_after_slot,
         {
             "end": END,
-            "rag": "rag_search"
+            "rag": "supervisor"
         }
     )
 
-    builder.add_edge("rag_search", "guardrails")
+    # Wire supervisor, query optimizer, and reasoning layers
+    builder.add_edge("supervisor", "query_optimize")
+    builder.add_edge("query_optimize", "rag_search")
+    builder.add_edge("rag_search", "reasoning")
+    builder.add_edge("reasoning", "guardrails")
 
     builder.add_conditional_edges(
         "guardrails",

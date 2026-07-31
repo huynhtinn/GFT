@@ -46,6 +46,18 @@ class SupportState(TypedDict, total=False):
     citations: List[GroundingCitation]
     confidence_score: float
     
+    # Query Optimization
+    rewritten_query: str
+    expanded_queries: List[str]
+    cohere_api_key: str
+
+    # Supervisor Coordinator
+    supervisor_decision: Dict[str, Any]
+
+    # Reasoning Layer
+    reasoning_trace: List[str]
+    reasoning_output: str
+    
     context_package: Optional[ContextPackage]
     ai_answer: str
     

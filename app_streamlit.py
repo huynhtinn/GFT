@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from app.graph.builder import support_agent_graph
 from app.services.qdrant_service import qdrant_kb
+from app.config.settings import settings
 import os
 # Cấu hình Trang Streamlit
 st.set_page_config(
@@ -187,17 +188,19 @@ h2, h3, h4 {
     color: var(--text-color, inherit);
 }
 .citation-title {
-    color: var(--primary-color, #4f46e5) !important;
+    color: var(--primary-color, #6366f1) !important;
     font-weight: 700;
 }
 .citation-meta {
-    color: var(--text-color, #475569) !important;
-    opacity: 0.7;
+    color: var(--text-color, inherit) !important;
+    opacity: 0.65;
     font-style: italic;
 }
 .citation-snippet {
-    color: var(--text-color, #1e293b) !important;
+    color: var(--text-color, inherit) !important;
     background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
 }
 
 .log-step {
@@ -309,6 +312,7 @@ with st.sidebar:
     user_role = current_user.get("role", "customer") if current_user else "customer"
     if user_role == "admin":
         available_pages = [
+            "Tiếp Nhận Ticket",
             "Giao Diện Nhân Sự",
             "Tra Cứu Tri Thức"
         ]
@@ -322,11 +326,7 @@ with st.sidebar:
 
 
     st.divider()
-    st.caption(f" {datetime.now().strftime('%H:%M:%S  •  %d/%m/%Y')}")
-
-
-
-
+    
 
 # -----------------------------------------------------------------------------
 # TAB 1: TIẾP NHẬN TICKET & MULTI-AGENT PIPELINE
@@ -335,7 +335,6 @@ if "Tiếp Nhận Ticket" in page:
     st.title(" Tiếp Nhận Yêu Cầu")
     
     st.markdown("### Kịch Bản Mẫu")
-    col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
     
     # Khởi tạo dữ liệu kịch bản mặc định trong Session State
     if "active_preset" not in st.session_state:
@@ -346,54 +345,130 @@ if "Tiếp Nhận Ticket" in page:
             "subject": "Hỏi về bảng giá gói Enterprise",
             "content": "Cho tôi xin thông tin bảng giá dịch vụ gói Enterprise năm 2026."
         }
+
+    # Hàng 1
+    col_r1_1, col_r1_2, col_r1_3, col_r1_4, col_r1_5, col_r1_6 = st.columns(6)
     
-    if col_p1.button("FAQ Giá Cước", use_container_width=True):
+    if col_r1_1.button("FAQ Giá Cước", use_container_width=True, help="Tư vấn gói cước Standard và Premium"):
         st.session_state["active_preset"] = {
             "name": "Nguyễn Văn A",
             "email": "nva@company.com",
             "channel": "web",
-            "subject": "Tư vấn gói cước Enterprise",
-            "content": "Bên mình đang quan tâm đến gói Enterprise cho 50 nhân sự. Cho mình xin bảng giá chi tiết và cam kết SLA với?"
+            "subject": "Tư vấn lựa chọn gói cước và cam kết SLA",
+            "content": "Công ty chúng tôi là startup, trung bình phát sinh khoảng 300 ticket hỗ trợ mỗi tháng. Chúng tôi nên chọn gói cước nào phù hợp, chi phí bao nhiêu và có cam kết thời gian phản hồi không?"
         }
         st.rerun()
 
-    if col_p2.button("Lỗi 403 Thiếu Info", use_container_width=True):
+    if col_r1_2.button("Lỗi API 403", use_container_width=True, help="Lỗi HTTP 403 Forbidden khi Gọi API"):
         st.session_state["active_preset"] = {
             "name": "Trần Thị B",
             "email": "dev@partner.com",
             "channel": "email",
-            "subject": "Bị lỗi 403 Forbidden khi kết nối API",
-            "content": "Tôi gọi API tạo đơn hàng bị trả về lỗi 403 Forbidden liên tục từ sáng nay. Nhờ hệ thống kiểm tra gấp!"
+            "subject": "Lỗi 403 Forbidden khi kết nối API tạo đơn hàng",
+            "content": "Chào đội ngũ hỗ trợ. Khi tôi gọi API tới endpoint /v1/orders thì nhận về mã lỗi HTTP 403 Forbidden liên tục từ sáng nay. API Key vẫn đang hoạt động. Nhờ kiểm tra giúp."
         }
         st.rerun()
 
-    if col_p3.button("Sự Cố P0 Khẩn Cấp", use_container_width=True):
+    if col_r1_3.button("Sự Cố P0 Sập DB", use_container_width=True, help="Sự cố P0 khẩn cấp mất kết nối Database"):
         st.session_state["active_preset"] = {
             "name": "Lê Văn C",
             "email": "admin@client.com",
             "channel": "internal",
-            "subject": "KHẨN CẤP P0: Sập máy chủ toàn bộ hệ thống",
-            "content": "Toàn bộ hệ thống production bị sập không truy cập được, database rò rỉ hoặc mất kết nối. Cần DevOps xử lý ngay lập tức!"
+            "subject": "KHẨN CẤP P0: Toàn bộ hệ thống API báo lỗi 500 và sập kết nối Database",
+            "content": "Toàn bộ hệ thống production bị sập không thể kết nối. Khách hàng của chúng tôi không thể thanh toán hay tạo đơn, log báo lỗi sập database hoặc rò rỉ kết nối nghiêm trọng. Yêu cầu xử lý khẩn cấp!"
         }
         st.rerun()
 
-    if col_p4.button("Khiếu Nại Hoàn Tiền", use_container_width=True):
+    if col_r1_4.button("Đòi Hoàn Tiền 2 Lần", use_container_width=True, help="Yêu cầu hoàn tiền do Double Billing"):
         st.session_state["active_preset"] = {
             "name": "Phạm Thị D",
             "email": "dpham@gmail.com",
             "channel": "zalo",
-            "subject": "Bức xúc trừ tiền 2 lần trên hóa đơn tháng 7",
-            "content": "Tôi bị hệ thống trừ tiền 2 lần cho cùng một gói cước tháng 7. Tôi rất bức xúc và yêu cầu hoàn tiền ngay lập tức!"
+            "subject": "Bức xúc bị trừ tiền 2 lần trên hóa đơn tháng 7",
+            "content": "Hệ thống của các bạn tự động trừ tiền 2 lần cho cùng một gói Standard trong chu kỳ thanh toán tháng 7 này trên tài khoản ví của tôi. Yêu cầu hoàn tiền gấp, dịch vụ làm ăn quá thiếu chuyên nghiệp!"
         }
         st.rerun()
 
-    if col_p5.button("Spam / Rác", use_container_width=True):
+    if col_r1_5.button("Spam / Rác", use_container_width=True, help="Tin nhắn quảng cáo rác"):
         st.session_state["active_preset"] = {
             "name": "Bot Spammer",
             "email": "scam@crypto.io",
             "channel": "web",
             "subject": "Cheap sale crypto trading robot 100% profit click here",
-            "content": "Invest in our bitcoin trading robot now for free crypto loans and 1000% daily profit click here!"
+            "content": "Invest in our bitcoin trading robot now for free crypto loans and 1000% daily profit! Guaranteed return on investment. Click here to register: http://spam-scam-link.xyz"
+        }
+        st.rerun()
+
+    if col_r1_6.button("Hoàn FlashSale", use_container_width=True, help="Từ chối hoàn tiền gói khuyến mãi đặc biệt"):
+        st.session_state["active_preset"] = {
+            "name": "Hoàng Văn E",
+            "email": "hve@gmail.com",
+            "channel": "email",
+            "subject": "Muốn hoàn tiền mua gói Standard trong đợt khuyến mãi Flash Sale",
+            "content": "Tháng trước tôi có mua gói Standard theo chương trình Flash Sale giảm giá 50%. Nay tôi không dùng hết nhu cầu nên muốn hủy dịch vụ và yêu cầu hoàn trả lại số tiền còn thừa của những ngày chưa sử dụng."
+        }
+        st.rerun()
+
+    # Hàng 2
+    col_r2_1, col_r2_2, col_r2_3, col_r2_4, col_r2_5, col_r2_6 = st.columns(6)
+
+    if col_r2_1.button("Cam Kết SLA", use_container_width=True, help="Chính sách SLA phản hồi và khắc phục"):
+        st.session_state["active_preset"] = {
+            "name": "Vũ Minh F",
+            "email": "vmf@enterprise.vn",
+            "channel": "web",
+            "subject": "Thời gian tối đa để khắc phục lỗi P1 và P2 theo cam kết SLA?",
+            "content": "Cho hỏi nếu hệ thống tích hợp của chúng tôi gặp sự cố nghiêm trọng (mức P1 hoặc P2) do lỗi hệ thống của các bạn, thì thời gian tối đa để các bạn khắc phục xong hoàn toàn và đưa dịch vụ hoạt động bình thường là bao lâu?"
+        }
+        st.rerun()
+
+    if col_r2_2.button("Webhook Zalo", use_container_width=True, help="Xác thực chữ ký Webhook Zalo ZNS"):
+        st.session_state["active_preset"] = {
+            "name": "Đỗ Thị G",
+            "email": "gdo@techcorp.com",
+            "channel": "web",
+            "subject": "Cách kiểm tra chữ ký signature của Webhook Zalo ZNS",
+            "content": "Tôi đang tích hợp webhook để nhận trạng thái tin nhắn ZNS gửi từ hệ thống của các bạn. Làm sao để xác thực chữ ký (signature) đính kèm trong header của payload để đảm bảo an toàn, tránh tin tặc giả mạo?"
+        }
+        st.rerun()
+
+    if col_r2_3.button("API Key Bị Lộ", use_container_width=True, help="Thu hồi và cấp lại API Key"):
+        st.session_state["active_preset"] = {
+            "name": "Ngô Văn H",
+            "email": "hngo@startup.io",
+            "channel": "web",
+            "subject": "API Key bị lộ trên kho lưu trữ công khai GitHub",
+            "content": "Chào hỗ trợ, lập trình viên của bên tôi vô tình đẩy source code chứa API Key của production lên GitHub công khai. Bây giờ tôi cần thu hồi key này ngay lập tức và cấp lại key mới thì làm thế nào?"
+        }
+        st.rerun()
+
+    if col_r2_4.button("Lỗi API Timeout", use_container_width=True, help="Yêu cầu làm rõ thông tin sự cố kết nối"):
+        st.session_state["active_preset"] = {
+            "name": "Phan Văn I",
+            "email": "iphan@dev.net",
+            "channel": "email",
+            "subject": "Lỗi kết nối timeout khi gọi dịch vụ",
+            "content": "Hệ thống của tôi liên tục bị lỗi timeout khi kết nối sang bên các bạn. Nhờ kiểm tra giùm."
+        }
+        st.rerun()
+
+    if col_r2_5.button("Bồi Thường SLA", use_container_width=True, help="Yêu cầu bồi thường do vi phạm SLA"):
+        st.session_state["active_preset"] = {
+            "name": "Bùi Thị K",
+            "email": "kby@corporation.com",
+            "channel": "email",
+            "subject": "Yêu cầu bồi thường thiệt hại do gián đoạn dịch vụ hơn 48 giờ liên tiếp",
+            "content": "Vào tuần trước, hệ thống API của các bạn bị mất kết nối liên tục từ ngày 20/07 đến 23/07 khiến chúng tôi không thể bán hàng cho khách. Thời gian gián đoạn vượt quá 48 giờ quy định. Yêu cầu bồi thường thiệt hại thực tế theo quy trình bồi thường SLA."
+        }
+        st.rerun()
+
+    if col_r2_6.button("Onboarding Mới", use_container_width=True, help="Hướng dẫn các bước thiết lập tài khoản mới"):
+        st.session_state["active_preset"] = {
+            "name": "Lâm Văn L",
+            "email": "llam@newbiz.com",
+            "channel": "web",
+            "subject": "Hướng dẫn các bước khởi đầu (onboarding) cho thành viên mới",
+            "content": "Tôi vừa đăng ký tài khoản doanh nghiệp thành công trên hệ thống. Xin hỏi các bước tiếp theo cần phải thiết lập và làm những gì để có thể kết nối thử nghiệm dịch vụ của bên các bạn?"
         }
         st.rerun()
 
@@ -401,13 +476,20 @@ if "Tiếp Nhận Ticket" in page:
     user_name_default = current_user.get("full_name") if current_user else preset["name"]
     user_email_default = current_user.get("email") if current_user else preset["email"]
 
+    is_admin_mode = (user_role == "admin")
+
     with st.form("ticket_form"):
         col1, col2 = st.columns(2)
         with col1:
             customer_name = st.text_input("Tên khách hàng (Đã xác thực)", value=user_name_default, disabled=bool(current_user), help="Tự động lấy theo tài khoản đăng nhập")
             customer_email = st.text_input("Email liên hệ (Đã xác thực)", value=user_email_default, disabled=bool(current_user), help="Tự động lấy theo tài khoản đăng nhập")
-            channel_idx = ["web", "email", "zalo", "internal"].index(preset["channel"]) if preset["channel"] in ["web", "email", "zalo", "internal"] else 0
-            channel = st.selectbox("Kênh tiếp nhận", ["web", "email", "zalo", "internal"], index=channel_idx)
+            if is_admin_mode:
+                channel_options = ["internal"]
+                channel_idx = 0
+            else:
+                channel_options = ["web", "email", "zalo"]
+                channel_idx = channel_options.index(preset["channel"]) if preset["channel"] in channel_options else 0
+            channel = st.selectbox("Kênh tiếp nhận", channel_options, index=channel_idx, disabled=is_admin_mode)
         with col2:
             subject = st.text_input("Tiêu đề yêu cầu", value=preset["subject"])
             content = st.text_area("Nội dung yêu cầu chi tiết", value=preset["content"], height=110)
@@ -427,6 +509,7 @@ if "Tiếp Nhận Ticket" in page:
             "subject": subject,
             "content": content,
             "status": "NEW",
+            "cohere_api_key": st.session_state.get("cohere_api_key", ""),
             "pipeline_logs": []
         }
 
@@ -485,6 +568,46 @@ if "Tiếp Nhận Ticket" in page:
                 st.markdown('<span class="badge badge-spam">SPAM_CLOSED (Đã đóng Ticket rác)</span>', unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # Nếu là Admin, hiển thị đầy đủ thông tin điều phối và tối ưu hóa truy vấn
+        if is_admin_mode:
+            if final_state.get("supervisor_decision") or final_state.get("rewritten_query"):
+                st.markdown("#### 🧭 Bộ Điều Phối & Tối Ưu Truy Vấn")
+                col_opt1, col_opt2 = st.columns(2)
+                with col_opt1:
+                    dec = final_state.get("supervisor_decision", {})
+                    if dec:
+                        st.markdown(f"""
+                        <div style="background: rgba(99, 102, 241, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.15);">
+                            <strong style="color: #6366f1;">Supervisor Agent decisions:</strong><br>
+                            • Phong cách: <code>{dec.get('response_style', 'N/A').upper()}</code><br>
+                            • Độ sâu lập luận: <code>{dec.get('reasoning_depth', 'N/A').upper()}</code><br>
+                            • Yêu cầu chuyển người: <code>{str(dec.get('escalation_required', False)).upper()}</code><br>
+                            • Lập luận: <span style="font-size: 0.9em; opacity: 0.85;">{dec.get('reasoning', '')}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                with col_opt2:
+                    rewritten = final_state.get("rewritten_query")
+                    exp = final_state.get("expanded_queries", [])
+                    if rewritten:
+                        exp_html = "<br>".join([f"&nbsp;&nbsp;+ <code>'{q}'</code>" for q in exp]) if exp else "&nbsp;&nbsp;Không có"
+                        st.markdown(f"""
+                        <div style="background: rgba(59, 130, 246, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.15);">
+                            <strong style="color: #3b82f6;">Query Optimizer & Expander:</strong><br>
+                            • Truy vấn viết lại: <code>"{rewritten}"</code><br>
+                            • Truy vấn mở rộng:<br>
+                            {exp_html}
+                        </div>
+                        """, unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+        # Lập luận hệ thống CoT
+        reasoning_trace = final_state.get("reasoning_trace", [])
+        if reasoning_trace:
+            with st.expander("🔬 Quá Trình Lập Luận Hệ Thống (Chain-of-Thought reasoning)", expanded=True):
+                for step in reasoning_trace:
+                    st.markdown(f"**{step}**")
+            st.markdown("<br>", unsafe_allow_html=True)
         
         # Phản hồi chi tiết
         if final_state.get("ai_answer"):
@@ -492,18 +615,19 @@ if "Tiếp Nhận Ticket" in page:
         
         if final_state.get("clarification_question"):
             st.warning(f"**Câu Hỏi Tự Động Làm Rõ Thông Tin:**\n\n{final_state.get('clarification_question')}")
-        
-        # Citations
-        citations = final_state.get("citations", [])
-        if citations:
-            st.markdown("#### Trích Dẫn Tri Thức Dẫn Nguồn (Qdrant Grounding Citations):")
-            for c in citations:
-                st.markdown(f"""
-                <div class="citation-card">
-                    <strong class="citation-title">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em class="citation-meta">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
-                    <code class="citation-snippet">"{c.get('snippet')}"</code>
-                </div>
-                """, unsafe_allow_html=True)
+
+        # Nếu là Admin, hiển thị Trích Dẫn Tri Thức Dẫn Nguồn
+        if is_admin_mode:
+            citations = final_state.get("citations", [])
+            if citations:
+                st.markdown("#### Trích Dẫn Tri Thức Dẫn Nguồn (Qdrant Grounding Citations):")
+                for c in citations:
+                    st.markdown(f"""
+                    <div class="citation-card">
+                        <strong class="citation-title">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em class="citation-meta">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                        <code class="citation-snippet">"{c.get('snippet')}"</code>
+                    </div>
+                    """, unsafe_allow_html=True)
         
         # Logs chi tiết
         st.markdown("---")
@@ -562,6 +686,34 @@ if "Tiếp Nhận Ticket" in page:
                     if tk.get("resolvedAt"):
                         st.caption(f"Thời gian nhân sự phê duyệt & phản hồi: {tk.get('resolvedAt')}")
                 elif status_code == "RESOLVED_AUTO":
+                    # Trích xuất reasoning_trace và rewritten_query từ logs nếu không có trực tiếp
+                    r_trace = tk.get("reasoningTrace", [])
+                    r_query = tk.get("rewrittenQuery")
+                    s_dec = tk.get("supervisorDecision")
+                    if not r_trace or not r_query:
+                        for log in tk.get("logs", []):
+                            if log.get("stepId") == "step_reasoning":
+                                r_trace = log.get("data", {}).get("reasoning_steps", [])
+                            if log.get("stepId") == "step_optimizer":
+                                r_query = log.get("data", {}).get("rewritten_query")
+                            if log.get("stepId") == "step_supervisor":
+                                s_dec = log.get("data", {}).get("decision")
+
+                    if user_role == "admin" and (s_dec or r_query):
+                        st.markdown("**Bộ tối ưu & Điều phối:**")
+                        col_hist1, col_hist2 = st.columns(2)
+                        with col_hist1:
+                            if s_dec:
+                                st.markdown(f"• Phong cách: `{s_dec.get('response_style')}` | Lập luận: {s_dec.get('reasoning')}")
+                        with col_hist2:
+                            if r_query:
+                                st.markdown(f"• Truy vấn tối ưu: `{r_query}`")
+
+                    if r_trace:
+                        with st.expander("🔬 Vết suy luận của AI (Reasoning Trace)", expanded=False):
+                            for step in r_trace:
+                                st.markdown(f"- {step}")
+
                     st.markdown("#### Câu Trả Lời Từ Trợ Lý AI Agent:")
                     st.success(tk.get("aiAnswer", "Chưa có nội dung phản hồi."))
                 elif status_code == "CLARIFICATION_SENT":
@@ -578,6 +730,7 @@ elif "Giao Diện Nhân Sự" in page:
     st.title("Workspace Nhân Sự")
     st.caption("Hòm thư xử lý và phê duyệt dành cho Nhân sự hỗ trợ.")
     
+    st.markdown("### 📥 Hàng Chờ Phê Duyệt Ticket (Escalations Queue)")
     escalated_tickets = [t for t in st.session_state["tickets_db"].values() if t.get("status") == "ESCALATED_HUMAN"]
     
     if not escalated_tickets:
@@ -606,8 +759,66 @@ elif "Giao Diện Nhân Sự" in page:
                 st.markdown(f"**Thái độ (Sentiment):** `{pkg.get('sentiment')}`")
                 st.markdown(f"**Hành động đề xuất:** `{pkg.get('recommendedAction')}`")
                 st.markdown(f"**Lý do chuyển giao:** {pkg.get('escalationReason')}")
+                st.markdown("**Các bước AI đã xử lý:**")
+                for step in pkg.get("triedSteps", []):
+                    st.markdown(f"- {step}")
             else:
                 st.write("Chưa có gói briefing.")
+
+        # Hiển thị đầy đủ thông tin phân tích AI cho Nhân sự duyệt
+        st.markdown("---")
+        st.markdown("### 🔍 Phân Tích Chi Tiết Từ AI Agent")
+        
+        # Trích xuất dữ liệu từ ticket logs
+        r_trace = ticket.get("reasoningTrace", [])
+        r_query = ticket.get("rewrittenQuery")
+        s_dec = ticket.get("supervisorDecision")
+        if not r_trace or not r_query:
+            for log in ticket.get("logs", []):
+                if log.get("stepId") == "step_reasoning":
+                    r_trace = log.get("data", {}).get("reasoning_steps", [])
+                if log.get("stepId") == "step_optimizer":
+                    r_query = log.get("data", {}).get("rewritten_query")
+                if log.get("stepId") == "step_supervisor":
+                    s_dec = log.get("data", {}).get("decision")
+        
+        col_an1, col_an2 = st.columns(2)
+        with col_an1:
+            if s_dec:
+                st.markdown(f"""
+                <div style="background: rgba(99, 102, 241, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.15);">
+                    <strong style="color: #6366f1;">Supervisor Agent decisions:</strong><br>
+                    • Phong cách: <code>{s_dec.get('response_style', 'N/A').upper()}</code><br>
+                    • Yêu cầu chuyển người: <code>{str(s_dec.get('escalation_required', False)).upper()}</code><br>
+                    • Lập luận: <span style="font-size: 0.9em; opacity: 0.85;">{s_dec.get('reasoning', '')}</span>
+                </div>
+                """, unsafe_allow_html=True)
+        with col_an2:
+            if r_query:
+                st.markdown(f"""
+                <div style="background: rgba(59, 130, 246, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.15);">
+                    <strong style="color: #3b82f6;">Query Optimizer:</strong><br>
+                    • Truy vấn tối ưu: <code>"{r_query}"</code>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        if r_trace:
+            with st.expander("🔬 Vết suy luận của AI (Reasoning Trace)", expanded=False):
+                for step in r_trace:
+                    st.markdown(f"- {step}")
+        
+        citations = ticket.get("citations", [])
+        if citations:
+            with st.expander("📚 Trích Dẫn Tri Thức Dẫn Nguồn (Grounding Citations)", expanded=False):
+                for c in citations:
+                    st.markdown(f"""
+                    <div class="citation-card">
+                        <strong class="citation-title">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em class="citation-meta">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                        <code class="citation-snippet">"{c.get('snippet')}"</code>
+                    </div>
+                    """, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("### Phê Duyệt & Chỉnh Sửa Câu Trả Lời Gửi Khách Hàng")
@@ -653,7 +864,11 @@ elif "Tra Cứu Tri Thức" in page:
         
         if st.button("Tra Cứu Vector Search", type="primary"):
             with st.spinner("Đang truy vấn Qdrant Vector Collection..."):
-                citations = qdrant_kb.search_relevant_chunks(search_query, limit=top_k)
+                citations = qdrant_kb.search_relevant_chunks(
+                    search_query, 
+                    limit=top_k, 
+                    cohere_api_key=st.session_state.get("cohere_api_key", "")
+                )
             
             st.markdown(f"#### Tìm thấy **{len(citations)}** đoạn tri thức tương đồng nhất:")
             for idx, c in enumerate(citations):
