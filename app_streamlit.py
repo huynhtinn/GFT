@@ -1,10 +1,12 @@
 import streamlit as st
 import json
+import uuid
+import html
+import os
 from datetime import datetime
 from app.graph.builder import support_agent_graph
 from app.services.qdrant_service import qdrant_kb
 from app.config.settings import settings
-import os
 # Cấu hình Trang Streamlit
 st.set_page_config(
     page_title="Hệ Thống Hỗ Trợ Tự Vận Hành — LangGraph & Qdrant",
@@ -499,7 +501,7 @@ if "Tiếp Nhận Ticket" in page:
 
 
     if submitted:
-        ticket_id = f"TCK-{hash(datetime.now().isoformat()) % 9000 + 1000}"
+        ticket_id = f"TCK-{uuid.uuid4().hex[:8].upper()}"
         
         initial_state = {
             "ticket_id": ticket_id,

@@ -18,9 +18,11 @@ class AuthService:
         self._seed_default_users()
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Tạo kết nối tới SQLite DB với Row Factory trả về dict."""
-        conn = sqlite3.connect(self.db_path)
+        """Tạo kết nối tới SQLite DB với Row Factory và WAL Mode an toàn cho đa tiến trình."""
+        conn = sqlite3.connect(self.db_path, timeout=10.0)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=5000;")
         return conn
 
     def _hash_password(self, password: str) -> str:
@@ -69,7 +71,6 @@ class AuthService:
                 conn.commit()
         except Exception as e:
             print(f"Lỗi khởi tạo SQLite Database: {e}")
-
 
     def _seed_default_users(self):
         """Tạo sẵn các tài khoản demo mặc định trong SQLite nếu chưa tồn tại."""
@@ -139,7 +140,6 @@ class AuthService:
         created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         password_hash = self._hash_password(password)
 
-
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -191,9 +191,16 @@ class AuthService:
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
                         status=excluded.status,
+                        category=excluded.category,
+                        priority=excluded.priority,
+                        confidence_score=excluded.confidence_score,
+                        citations_json=excluded.citations_json,
                         ai_answer=excluded.ai_answer,
-                        resolved_at=excluded.resolved_at,
-                        logs_json=excluded.logs_json;
+                        clarification_question=excluded.clarification_question,
+                        missing_slots_json=excluded.missing_slots_json,
+                        context_package_json=excluded.context_package_json,
+                        logs_json=excluded.logs_json,
+                        resolved_at=excluded.resolved_at;
                 """, (
                     t["id"],
                     t.get("customerName", ""),
