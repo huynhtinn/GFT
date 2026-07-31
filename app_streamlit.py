@@ -355,7 +355,7 @@ if "Tiếp Nhận Ticket" in page:
             "email": "nva@company.com",
             "channel": "web",
             "subject": "Tư vấn lựa chọn gói cước và cam kết SLA",
-            "content": "Công ty chúng tôi là startup, trung bình phát sinh khoảng 300 ticket hỗ trợ mỗi tháng. Chúng tôi nên chọn gói cước nào phù hợp, chi phí bao nhiêu và có cam kết thời gian phản hồi không?"
+            "content": "Công ty chúng tôi là startup, trung bình phát sinh khoảng 100 ticket hỗ trợ mỗi tháng. Chúng tôi nên chọn gói cước nào phù hợp, chi phí bao nhiêu và có cam kết thời gian phản hồi không?"
         }
         st.rerun()
 
