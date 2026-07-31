@@ -15,7 +15,8 @@ dependencies = [
     "numpy>=1.26.0",
     "streamlit>=1.30.0",
     "pydantic-settings>=2.0.0",
-    "sentence-transformers>=3.0.0"
+    "sentence-transformers>=3.0.0",
+    "torchvision"
 ]
 
 [build-system]
