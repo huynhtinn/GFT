@@ -1,10 +1,10 @@
-import json
 from datetime import datetime
 from typing import Dict, Any
 from app.graph.state import SupportState, PipelineLog, GroundingCitation, ContextPackage
 from app.services.qdrant_service import qdrant_kb
-from app.services.llm_service import groq_llm, parse_json_response
-from app.config.settings import settings
+from app.services.llm_service import groq_llm
+
+import json
 from app.prompts.support_prompts import (
     build_auto_reply_messages,
     build_human_draft_messages,
@@ -16,9 +16,8 @@ from app.prompts.support_prompts import (
     build_reasoning_messages
 )
 
-
 def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
-    """Node 1: Kiểm tra Spam & Trùng lặp bằng LLM Agent (Pure LLM Inspector)."""
+    """Node 1: Kiểm tra Spam & Trùng lặp bằng 100% LLM Agent (Pure LLM Inspector)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
@@ -27,15 +26,18 @@ def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
     is_spam = False
     spam_reason = "Yêu cầu hợp lệ"
 
-    # Gọi LLM Agent kiểm tra Spam với JSON Mode
+    # Gọi LLM Agent kiểm tra Spam
     if groq_llm.is_available():
         try:
             messages = build_spam_detector_messages(subject, content)
-            raw_response = groq_llm.generate_completion(messages, temperature=0.1, json_mode=True)
-            parsed = parse_json_response(raw_response)
-            if parsed:
-                is_spam = parsed.get("is_spam", False)
-                spam_reason = parsed.get("reason", "Phát hiện nội dung quảng cáo/rác từ LLM")
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    is_spam = parsed.get("is_spam", False)
+                    spam_reason = parsed.get("reason", "Phát hiện nội dung quảng cáo/rác từ LLM")
         except Exception as err:
             print(f"LLM Spam Inspector Error: {err}")
 
@@ -70,7 +72,7 @@ def spam_duplicate_detector_node(state: SupportState) -> Dict[str, Any]:
 
 
 def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
-    """Node 2: Phân loại nhóm Intent & Priority bằng LLM Agent (Pure LLM Classifier)."""
+    """Node 2: Phân loại nhóm Intent & Priority bằng 100% LLM Agent (Pure LLM Classifier)."""
     now = datetime.now().isoformat()
     logs = list(state.get("pipeline_logs", []))
 
@@ -80,15 +82,18 @@ def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
     category = "faq"
     priority = "P3_LOW"
 
-    # Gọi thuần LLM Agent để phân loại động Intent & Priority với JSON Mode
+    # Gọi thuần LLM Agent để phân loại động Intent & Priority
     if groq_llm.is_available():
         try:
             messages = build_classifier_messages(subject, content)
-            raw_response = groq_llm.generate_completion(messages, temperature=0.1, json_mode=True)
-            parsed = parse_json_response(raw_response)
-            if parsed:
-                category = parsed.get("category", "faq")
-                priority = parsed.get("priority", "P3_LOW")
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    category = parsed.get("category", "faq")
+                    priority = parsed.get("priority", "P3_LOW")
         except Exception as err:
             print(f"LLM Classifier Error: {err}")
 
@@ -107,6 +112,14 @@ def intent_priority_classifier_node(state: SupportState) -> Dict[str, Any]:
         "pipeline_logs": logs
     }
 
+
+
+
+from app.prompts import (
+    build_auto_reply_messages,
+    build_human_draft_messages,
+    build_clarification_question
+)
 
 def slot_completeness_inspector_node(state: SupportState) -> Dict[str, Any]:
     """Node 3: Kiểm tra thông tin bắt buộc & sinh Clarification Loop."""
@@ -168,10 +181,13 @@ def supervisor_node(state: SupportState) -> Dict[str, Any]:
     if groq_llm.is_available():
         try:
             messages = build_supervisor_messages(subject, content, category, priority)
-            raw_response = groq_llm.generate_completion(messages, temperature=0.1, json_mode=True)
-            parsed = parse_json_response(raw_response)
-            if parsed:
-                decision = parsed
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    decision = parsed
         except Exception as err:
             print(f"Supervisor Agent Error: {err}")
 
@@ -210,11 +226,14 @@ def query_optimizer_node(state: SupportState) -> Dict[str, Any]:
     if groq_llm.is_available():
         try:
             messages = build_query_optimizer_messages(subject, content)
-            raw_response = groq_llm.generate_completion(messages, temperature=0.1, json_mode=True)
-            parsed = parse_json_response(raw_response)
-            if parsed:
-                rewritten_query = parsed.get("rewritten_query", rewritten_query)
-                expanded_queries = parsed.get("expanded_queries", expanded_queries)
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    rewritten_query = parsed.get("rewritten_query", rewritten_query)
+                    expanded_queries = parsed.get("expanded_queries", expanded_queries)
         except Exception as err:
             print(f"Query Optimizer Agent Error: {err}")
 
@@ -236,6 +255,9 @@ def query_optimizer_node(state: SupportState) -> Dict[str, Any]:
         "pipeline_logs": logs
     }
 
+
+
+from app.config.settings import settings
 
 def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
     """Node 4: Thực hiện Qdrant Vector DB Retrieval & Grounding Citations (Multi-Query + Rerank)."""
@@ -260,6 +282,7 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
 
     # Thực hiện Multi-Query Retrieval
     all_citations = []
+    # Giới hạn tối đa 4 truy vấn chạy để tránh latency cao
     for q in queries_to_run[:4]:
         raw_chunks = qdrant_kb.search_relevant_chunks(q, limit=settings.RAG_SEARCH_LIMIT * 2, cohere_api_key=None)
         all_citations.extend(raw_chunks)
@@ -278,11 +301,28 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
         citations = qdrant_kb.rerank_citations(rewritten_query, unique_citations, cohere_api_key=effective_api_key)
     else:
         citations = unique_citations
+        # Sắp xếp theo score mặc định của Qdrant nếu không rerank
         citations.sort(key=lambda x: x.get("relevanceScore", 0.0), reverse=True)
 
+    # Lấy Top limit kết quả tốt nhất
     citations = citations[:settings.RAG_SEARCH_LIMIT]
+
     best_score = max([c["relevanceScore"] for c in citations], default=0.0)
-    confidence_score = round(best_score * 100, 1)
+    
+    # Chuẩn hóa Confidence Score (%) cho Multilingual Semantic Search & Rerank
+    # Cosine Similarity của paraphrase-multilingual-MiniLM-L12-v2 (hoặc Cohere Rerank v3)
+    # cho các câu hỏi dài thường nằm trong khoảng 0.12 - 0.45 cho các kết quả khớp ngữ nghĩa cao.
+    if best_score >= 0.35:
+        confidence_score = min(99.0, round(90.0 + (best_score - 0.35) * 40.0, 1))
+    elif best_score >= 0.12:
+        # Khoảng 0.12 -> 0.35 quy đổi sang 55.0% -> 90.0% (Độ tin cậy RAG cao)
+        confidence_score = round(55.0 + (best_score - 0.12) * (35.0 / 0.23), 1)
+    elif best_score >= 0.05:
+        # Khoảng 0.05 -> 0.12 quy đổi sang 25.0% -> 55.0% (Độ tin cậy trung bình)
+        confidence_score = round(25.0 + (best_score - 0.05) * (30.0 / 0.07), 1)
+    else:
+        # Khoảng 0.00 -> 0.05 quy đổi sang 0.0% -> 25.0% (Độ tin cậy thấp)
+        confidence_score = round(best_score * 500.0, 1)
 
     rerank_status_str = f" (Multi-Query Rerank: {len(queries_to_run)} queries)" if use_rerank else " (Không Rerank)"
     logs.append({
@@ -332,11 +372,15 @@ def reasoning_node(state: SupportState) -> Dict[str, Any]:
     if groq_llm.is_available():
         try:
             messages = build_reasoning_messages(subject, content, category, priority, context_str, supervisor_decision)
-            raw_response = groq_llm.generate_completion(messages, temperature=0.1, max_tokens=1536, json_mode=True)
-            parsed = parse_json_response(raw_response)
-            if parsed:
-                reasoning_steps = parsed.get("reasoning_steps", reasoning_steps)
-                reasoning_output = parsed.get("reasoning_output", reasoning_output)
+            # Dùng temperature thấp để suy luận chính xác, bám sát tài liệu
+            raw_response = groq_llm.generate_completion(messages, temperature=0.1, max_tokens=1536)
+            if raw_response:
+                json_start = raw_response.find("{")
+                json_end = raw_response.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    parsed = json.loads(raw_response[json_start:json_end])
+                    reasoning_steps = parsed.get("reasoning_steps", reasoning_steps)
+                    reasoning_output = parsed.get("reasoning_output", reasoning_output)
         except Exception as err:
             print(f"Reasoning Agent Error: {err}")
 
@@ -392,6 +436,7 @@ def guardrails_router_node(state: SupportState) -> Dict[str, Any]:
             "pipeline_logs": logs
         }
     else:
+        # Lấy câu trả lời đã suy luận từ Reasoning Layer
         ai_answer = reasoning_output if reasoning_output else "Hệ thống đã ghi nhận yêu cầu của quý khách và đang được xử lý."
         
         logs.append({
@@ -424,6 +469,7 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     elif priority == "P1_HIGH":
         sentiment = "Bức xúc"
 
+    # Sử dụng reasoning_output hoặc soạn nháp nếu trống
     auto_draft = reasoning_output
     if not auto_draft:
         auto_draft = (
@@ -458,3 +504,4 @@ def hitl_briefing_generator_node(state: SupportState) -> Dict[str, Any]:
     }
 
     return {"context_package": context_package}
+
