@@ -1,0 +1,74 @@
+Hướng dẫn quản lý API Key — Tạo, bảo mật, gia hạn và thu hồi
+
+=== API KEY LÀ GÌ? ===
+
+API Key là chuỗi ký tự định danh duy nhất được cấp cho mỗi ứng dụng/dịch vụ của bạn
+để xác thực với hệ thống khi gọi API. API Key có định dạng:
+
+  gft_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  (Production)
+  gft_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  (Staging/Testing)
+
+QUAN TRỌNG: Không bao giờ chia sẻ API Key ra ngoài, không commit vào Git repository.
+
+=== TẠO API KEY MỚI ===
+
+1. Đăng nhập Dashboard tại app.gft.com
+2. Vào Settings > API Keys > Create New Key
+3. Đặt tên mô tả rõ ràng: VD "Key cho App Mobile iOS", "Key cho CRM tích hợp"
+4. Chọn Scope (quyền hạn) cần thiết:
+   - read:tickets — Đọc danh sách và chi tiết ticket
+   - write:tickets — Tạo và cập nhật ticket
+   - read:reports — Truy cập báo cáo phân tích
+   - admin:users — Quản lý người dùng (chỉ cấp khi thực sự cần)
+5. Thiết lập IP Whitelist (khuyến nghị bắt buộc)
+6. Lưu key ngay lập tức — Hệ thống chỉ hiển thị key đầy đủ 1 lần duy nhất
+
+=== THIẾT LẬP IP WHITELIST ===
+
+IP Whitelist giới hạn chỉ cho phép các địa chỉ IP đã đăng ký được dùng API Key.
+Đây là lớp bảo mật quan trọng nếu key bị lộ ra ngoài.
+
+Cách thêm IP:
+1. Dashboard > Settings > API Keys > [Tên Key] > IP Restrictions
+2. Thêm IP Public của server production (ví dụ: 203.113.xxx.xxx)
+3. Có thể thêm nhiều IP (mỗi IP một dòng hoặc theo CIDR range: 203.113.0.0/24)
+4. Lưu thay đổi — có hiệu lực ngay lập tức
+
+Lưu ý:
+- IP 0.0.0.0/0 nghĩa là cho phép tất cả IP (không khuyến nghị dùng trong production)
+- IP của môi trường development thường thay đổi → chỉ nên whitelist IP production
+
+=== THỜI HẠN VÀ GIA HẠN API KEY ===
+
+- Thời hạn mặc định: 1 năm kể từ ngày tạo
+- Hệ thống gửi email nhắc nhở 30 ngày và 7 ngày trước khi hết hạn
+- Gia hạn: Dashboard > API Keys > [Tên Key] > Extend Expiry
+- Lưu ý: Gia hạn không thay đổi key string, chỉ kéo dài thời gian hiệu lực
+
+=== THU HỒI (REVOKE) API KEY ===
+
+Nên thu hồi API Key ngay khi:
+- Nghi ngờ key bị lộ ra ngoài
+- Nhân viên đang dùng key đó nghỉ việc
+- Ứng dụng tích hợp không còn sử dụng
+
+Cách thu hồi:
+1. Dashboard > Settings > API Keys > [Tên Key] > Revoke
+2. Xác nhận bằng mật khẩu tài khoản
+3. Key bị thu hồi ngay lập tức, mọi request dùng key đó trả về lỗi 401
+
+=== BẢO MẬT API KEY — THỰC HÀNH TỐT NHẤT ===
+
+1. Lưu trong biến môi trường (.env file), KHÔNG hardcode trong source code
+2. Thêm .env vào .gitignore để tránh commit lên Git
+3. Dùng Secret Manager của cloud provider (AWS Secrets Manager, GCP Secret Manager)
+4. Tạo key riêng cho từng môi trường (production / staging / development)
+5. Tạo key riêng cho từng ứng dụng/team để dễ thu hồi từng phần
+6. Rotate (tạo key mới, thu hồi key cũ) định kỳ 6 tháng/lần
+7. Audit log: Kiểm tra Dashboard > API Logs để phát hiện request bất thường
+
+=== GIỚI HẠN SỐ API KEY ===
+
+- Gói Basic: Tối đa 3 API Key đồng thời
+- Gói Professional: Tối đa 10 API Key đồng thời
+- Gói Enterprise: Không giới hạn số API Key

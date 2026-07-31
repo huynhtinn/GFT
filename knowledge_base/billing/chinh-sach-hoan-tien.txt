@@ -1,0 +1,43 @@
+Chính sách hoàn tiền và hủy dịch vụ năm 2026
+
+=== ĐIỀU KIỆN ĐƯỢC HOÀN TIỀN 100% ===
+
+1. Lỗi Double Billing (Trừ tiền 2 lần):
+   Nếu hệ thống tự động trừ tiền 2 lần cho cùng 1 gói cước trong cùng 1 chu kỳ thanh toán, 
+   khách hàng được hoàn tiền toàn bộ khoản bị trừ thừa trong vòng 3–5 ngày làm việc.
+
+2. Gián đoạn dịch vụ quá 48 giờ:
+   Nếu dịch vụ bị gián đoạn liên tục quá 48 giờ do lỗi từ phía hệ thống (không phải do khách hàng),
+   khách hàng được hoàn tiền tính theo số ngày gián đoạn thực tế so với chu kỳ thanh toán tháng.
+
+3. Nâng cấp/hạ cấp gói nhầm:
+   Nếu khách hàng nâng hoặc hạ cấp gói trong vòng 24 giờ đầu tiên và chưa sử dụng tính năng mới,
+   được hoàn tiền chênh lệch 100%.
+
+=== ĐIỀU KIỆN KHÔNG ĐƯỢC HOÀN TIỀN ===
+
+- Đã sử dụng dịch vụ quá 30 ngày trong chu kỳ tính phí.
+- Hủy gói do vi phạm điều khoản sử dụng.
+- Thanh toán bằng thẻ tín dụng đã quá hạn chargeback (quá 90 ngày).
+- Mua gói theo chương trình khuyến mãi đặc biệt (flash sale, mua 1 tặng 1).
+
+=== QUY TRÌNH YÊU CẦU HOÀN TIỀN ===
+
+Bước 1: Khách hàng gửi ticket qua hệ thống với tiêu đề "Yêu cầu hoàn tiền – [Mã hóa đơn]"
+Bước 2: Đính kèm ảnh chụp màn hình hóa đơn bị lỗi hoặc báo cáo lỗi hệ thống
+Bước 3: Nhân sự CSKH xác minh thông tin trong vòng 1 ngày làm việc
+Bước 4: Hoàn tiền được thực hiện qua Momo / VNPAY / chuyển khoản ngân hàng
+Bước 5: Khách nhận tiền hoàn trong vòng 3–5 ngày làm việc kể từ ngày xác nhận
+
+=== PHƯƠNG THỨC HOÀN TIỀN ===
+
+- Momo: Hoàn về số điện thoại đăng ký tài khoản
+- VNPAY: Hoàn về tài khoản ngân hàng liên kết
+- Chuyển khoản ngân hàng: Khách cung cấp số tài khoản, tên chủ tài khoản, ngân hàng
+- Thẻ tín dụng/ghi nợ quốc tế: Hoàn trực tiếp vào thẻ (5–10 ngày làm việc)
+
+=== LƯU Ý QUAN TRỌNG ===
+
+- Mọi yêu cầu hoàn tiền cần gửi trong vòng 30 ngày kể từ ngày phát sinh lỗi.
+- Hoàn tiền bằng đồng tiền gốc của giao dịch (VNĐ hoặc USD).
+- Chênh lệch tỷ giá (nếu có) do ngân hàng thực hiện, hệ thống không chịu trách nhiệm.

@@ -1,0 +1,90 @@
+Quy trình xử lý sự cố khẩn cấp P0 — Emergency Response Protocol
+
+=== PHÂN LOẠI SỰ CỐ ===
+
+P0 — CRITICAL (Thảm họa — Xử lý ngay lập tức 24/7):
+  - Toàn bộ hệ thống production sập, không thể truy cập
+  - Rò rỉ dữ liệu khách hàng hoặc nghi ngờ tấn công bảo mật
+  - Mất mát dữ liệu không thể khôi phục
+  - Ảnh hưởng >50% khách hàng đang hoạt động
+
+P1 — HIGH (Nghiêm trọng — Xử lý trong 1 giờ):
+  - Một tính năng cốt lõi không hoạt động (VD: không tạo được ticket)
+  - Hiệu suất giảm nghiêm trọng (response time > 10 giây)
+  - Lỗi thanh toán ảnh hưởng diện rộng
+  - Ảnh hưởng 10–50% khách hàng
+
+P2 — MEDIUM (Xử lý trong 4 giờ làm việc):
+  - Tính năng phụ không hoạt động
+  - Lỗi giao diện ảnh hưởng trải nghiệm
+  - Webhook gửi chậm hoặc gián đoạn
+
+P3 — LOW (Xử lý trong 1 ngày làm việc):
+  - Lỗi nhỏ không ảnh hưởng vận hành
+  - Yêu cầu cải tiến tính năng
+  - Câu hỏi thông tin chung
+
+=== QUY TRÌNH XỬ LÝ P0 ===
+
+AI AGENT KHÔNG TỰ XỬ LÝ SỰ CỐ P0.
+Mọi ticket được phân loại P0 phải được chuyển thẳng cho Nhân sự DevOps.
+
+BƯỚC 1 — Phát hiện và Báo cáo (0–5 phút):
+  - Khách hàng hoặc hệ thống monitoring phát hiện sự cố
+  - Gửi ticket với tiêu đề bắt đầu bằng "[P0-URGENT]"
+  - Hệ thống tự động leo thang lên nhân sự ca trực DevOps
+
+BƯỚC 2 — Kích hoạt War Room (5–15 phút):
+  - Trưởng ca DevOps lập tức vào War Room (Slack channel: #incident-p0)
+  - Assign Incident Commander (IC) và Communication Lead
+  - Thông báo nội bộ cho các bộ phận liên quan
+
+BƯỚC 3 — Điều tra và Khắc phục (15 phút – N giờ):
+  - Kiểm tra hệ thống monitoring (Grafana / Datadog)
+  - Kiểm tra logs (Elasticsearch / CloudWatch)
+  - Áp dụng biện pháp khắc phục tạm thời nếu có
+  - Cập nhật status tại status.gft.com mỗi 30 phút
+
+BƯỚC 4 — Thông báo Khách hàng (song song với Bước 3):
+  - Cập nhật trang status.gft.com ngay khi xác nhận sự cố
+  - Gửi email thông báo cho tất cả khách hàng bị ảnh hưởng
+  - Cập nhật mỗi 30 phút hoặc khi có thông tin mới
+
+BƯỚC 5 — Khôi phục và Xác nhận:
+  - Xác nhận hệ thống hoạt động ổn định ít nhất 15 phút
+  - Cập nhật status.gft.com: "All systems operational"
+  - Gửi email thông báo đã khôi phục
+
+BƯỚC 6 — Post-mortem (trong vòng 48 giờ sau sự cố):
+  - Viết báo cáo Post-mortem: Nguyên nhân gốc rễ (Root Cause), timeline, tác động, biện pháp phòng ngừa
+  - Chia sẻ với khách hàng Enterprise theo yêu cầu
+
+=== DANH SÁCH LIÊN LẠC CA TRỰC ===
+
+Kênh báo cáo sự cố:
+  - Slack: #incident-p0 (nội bộ)
+  - Email: oncall@gft.com
+  - Hotline ca trực: (Cấp cho Gói Enterprise qua hợp đồng)
+
+Trưởng ca DevOps được thông báo tự động qua PagerDuty khi:
+  - Hệ thống monitoring phát hiện anomaly
+  - Có ticket P0 được tạo trong hệ thống hỗ trợ
+
+=== CAM KẾT SLA VỚI KHÁCH HÀNG KHI SỰ CỐ P0 ===
+
+- Xác nhận nhận sự cố: Trong vòng 15 phút
+- Cập nhật trạng thái lần đầu: Trong vòng 30 phút
+- Khôi phục mục tiêu (RTO): 4 giờ
+- Điểm khôi phục dữ liệu (RPO): Tối đa mất 1 giờ dữ liệu
+- Bồi thường SLA: Tự động tính và hoàn tiền theo hợp đồng nếu vượt RTO
+
+=== KIỂM TRA TÌNH TRẠNG HỆ THỐNG ===
+
+Trang trạng thái công khai: status.gft.com
+  - Hiển thị tình trạng realtime của từng thành phần
+  - Lịch sử sự cố 90 ngày gần nhất
+  - Đăng ký nhận thông báo email/SMS khi có sự cố
+
+API kiểm tra sức khỏe hệ thống:
+  GET https://api.gft.com/health
+  Response: {"status": "ok", "latency_ms": 23, "version": "2.1.4"}

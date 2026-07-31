@@ -1,0 +1,83 @@
+Cam kết SLA và điều khoản dịch vụ (Service Level Agreement)
+
+=== CAM KẾT UPTIME ===
+
+Gói Basic:
+  - SLA uptime: 99.5% (tương đương tối đa ~3.6 giờ downtime/tháng)
+  - Không bao gồm bảo trì định kỳ (maintenance windows)
+
+Gói Professional:
+  - SLA uptime: 99.9% (tối đa ~43 phút downtime/tháng)
+  - Bảo trì định kỳ: Thông báo trước 48 giờ, thực hiện ngoài giờ cao điểm
+
+Gói Enterprise:
+  - SLA uptime: 99.99% (tối đa ~4.3 phút downtime/tháng)
+  - Bảo trì định kỳ: Thông báo trước 7 ngày, thực hiện theo lịch đã thỏa thuận
+  - SLA tùy chỉnh: Có thể đàm phán theo yêu cầu đặc biệt
+
+=== THỜI GIAN PHẢN HỒI CAM KẾT ===
+
+Loại sự cố P0 (Critical):
+  - Basic: Không cam kết (best effort)
+  - Professional: 2 giờ
+  - Enterprise: 15 phút (24/7 kể cả ngày lễ)
+
+Loại sự cố P1 (High):
+  - Basic: 24 giờ làm việc
+  - Professional: 4 giờ làm việc
+  - Enterprise: 1 giờ (24/7)
+
+Loại sự cố P2 (Medium):
+  - Basic: 5 ngày làm việc
+  - Professional: 2 ngày làm việc
+  - Enterprise: 4 giờ làm việc
+
+Loại sự cố P3 (Low):
+  - Basic: Không cam kết
+  - Professional: 5 ngày làm việc
+  - Enterprise: 2 ngày làm việc
+
+=== BỒI THƯỜNG KHI VI PHẠM SLA ===
+
+Nếu uptime thực tế thấp hơn cam kết trong một tháng:
+  - Uptime 99.0% – 99.49%: Hoàn 10% phí tháng đó
+  - Uptime 95.0% – 98.99%: Hoàn 25% phí tháng đó
+  - Uptime dưới 95.0%: Hoàn 50% phí tháng đó
+
+Lưu ý:
+  - Bồi thường dưới dạng credit vào tài khoản (không thanh toán tiền mặt)
+  - Không áp dụng khi downtime do: lỗi của khách hàng, tấn công DDoS từ bên ngoài, bất khả kháng (thiên tai, chiến tranh)
+  - Phải yêu cầu trong vòng 30 ngày sau khi sự cố xảy ra
+
+=== MAINTENANCE WINDOWS (LỊCH BẢO TRÌ ĐỊNH KỲ) ===
+
+Bảo trì định kỳ thường vào:
+  - Thứ 3 hàng tuần: 2:00 AM – 4:00 AM (giờ Hà Nội)
+  - Thông báo qua email và trang status.gft.com ít nhất 48 giờ trước
+  - Nếu cần bảo trì khẩn cấp: Thông báo 1 giờ trước
+
+Trong thời gian bảo trì:
+  - API có thể không phản hồi hoặc phản hồi chậm
+  - Giao diện người dùng hiển thị banner thông báo
+  - Bảo trì nằm trong giới hạn downtime được phép, không tính vào SLA vi phạm
+
+=== ĐIỀU KHOẢN LOẠI TRỪ ===
+
+Các trường hợp KHÔNG được tính vào downtime SLA:
+  - Lỗi do phía khách hàng (sai cấu hình, lỗi code của khách)
+  - Sự cố tại ISP/network của khách hàng
+  - Tấn công DDoS quy mô lớn vào hạ tầng
+  - Bất khả kháng (force majeure): thiên tai, dịch bệnh, lệnh cơ quan nhà nước
+
+=== CHÍNH SÁCH THAY ĐỔI SLA ===
+
+- Thông báo trước 30 ngày nếu có thay đổi bất lợi cho khách hàng
+- Khách hàng có quyền hủy hợp đồng không phạt nếu không chấp nhận điều khoản mới
+- Thay đổi có lợi cho khách hàng: Áp dụng ngay lập tức
+
+=== CONTACT SLA DISPUTES ===
+
+Nếu có tranh chấp về vi phạm SLA:
+  Email: sla-disputes@gft.com
+  Kèm theo: Mô tả sự cố, thời gian, ảnh hưởng, bằng chứng (logs, screenshots)
+  Thời gian xem xét: 10 ngày làm việc

@@ -1,0 +1,89 @@
+Câu hỏi thường gặp (FAQ) — Tổng hợp các câu hỏi phổ biến nhất từ khách hàng
+
+=== VỀ TÀI KHOẢN VÀ ĐĂNG NHẬP ===
+
+Q: Tôi quên mật khẩu, làm sao đặt lại?
+A: Vào trang đăng nhập, nhấn "Quên mật khẩu", nhập email đăng ký.
+   Hệ thống gửi link đặt lại mật khẩu qua email trong vòng 2 phút.
+   Link có hiệu lực trong 30 phút. Nếu không nhận được, kiểm tra hộp Spam/Junk.
+
+Q: Tài khoản của tôi bị khóa, phải làm sao?
+A: Tài khoản bị khóa sau 5 lần đăng nhập sai liên tiếp (để bảo mật).
+   Chờ 30 phút để hệ thống tự mở khóa, hoặc gửi ticket yêu cầu mở khóa thủ công ngay.
+   Gửi ticket kèm email đăng ký và ảnh chụp màn hình thông báo lỗi.
+
+Q: Tôi muốn thêm thành viên vào tài khoản công ty?
+A: Dashboard > Settings > Team Members > Invite Member
+   Nhập email, chọn vai trò (Admin / Member / Viewer)
+   Thành viên nhận email mời và kích hoạt tài khoản.
+   Số lượng thành viên phụ thuộc vào gói dịch vụ (xem bảng gói cước).
+
+Q: Làm sao thay đổi email chính của tài khoản?
+A: Dashboard > Settings > Profile > Change Email
+   Cần xác nhận qua email cũ và email mới
+   Quá trình thay đổi mất 5–10 phút.
+
+=== VỀ DỊCH VỤ VÀ TÍNH NĂNG ===
+
+Q: Dịch vụ của bạn hỗ trợ những ngôn ngữ nào?
+A: Hiện tại hỗ trợ đầy đủ tiếng Việt và tiếng Anh cho toàn bộ giao diện và API.
+   Các ngôn ngữ khác đang trong lộ trình phát triển Q3/2026.
+
+Q: Dữ liệu của tôi có được backup không?
+A: Có. Hệ thống tự động backup dữ liệu hàng ngày (lúc 2:00 AM theo giờ Hà Nội).
+   Giữ backup 30 ngày gần nhất.
+   Gói Enterprise: Backup hàng giờ, giữ 90 ngày.
+   Khôi phục dữ liệu từ backup: Liên hệ nhân sự hỗ trợ.
+
+Q: Hệ thống có API để tích hợp với phần mềm khác không?
+A: Có. REST API đầy đủ tại docs.gft.com/api
+   Webhook cho realtime notifications.
+   SDK chính thức cho Python, Node.js, PHP (đang phát triển Java và Go).
+   Sandbox/Staging environment để test trước khi lên production.
+
+Q: Tôi có thể xuất toàn bộ dữ liệu của mình không?
+A: Có. Dashboard > Settings > Data Export
+   Xuất định dạng: CSV, JSON, Excel
+   Dữ liệu xuất bao gồm: tickets, users, reports, attachments
+   Thời gian xuất: Tức thì (dưới 1000 records) hoặc nhận email link tải về (trên 1000 records)
+
+Q: Hệ thống có thể tích hợp với Slack, Microsoft Teams không?
+A: Hiện tại:
+   - Slack: Hỗ trợ thông báo qua Incoming Webhook của Slack (tự cấu hình)
+   - Microsoft Teams: Đang trong roadmap, dự kiến Q4/2026
+   - Zalo: Hỗ trợ qua Zalo ZNS (xem hướng dẫn tích hợp Webhook)
+
+=== VỀ BẢO MẬT VÀ TUÂN THỦ ===
+
+Q: Dữ liệu của tôi được bảo mật như thế nào?
+A: - Mã hóa dữ liệu khi lưu trữ: AES-256
+   - Mã hóa kết nối: TLS 1.3
+   - Hệ thống vận hành trên AWS (Region: ap-southeast-1, Singapore)
+   - Tuân thủ: ISO 27001 (đang kiểm định), GDPR cơ bản, Nghị định 13/2023/NĐ-CP (Việt Nam)
+   - Penetration Testing hàng năm bởi bên thứ ba độc lập
+
+Q: Nhân viên của bạn có thể xem dữ liệu của tôi không?
+A: Chỉ có kỹ sư hỗ trợ cấp cao mới có thể truy cập dữ liệu khi được khách hàng cho phép
+   hoặc khi cần thiết để khắc phục sự cố (có audit log đầy đủ).
+   Mọi truy cập đều được ghi lại và thông báo cho tài khoản admin của khách hàng.
+
+Q: Chính sách bảo mật dữ liệu khi tôi hủy tài khoản?
+A: Sau khi hủy, dữ liệu được giữ 30 ngày để khách tải về.
+   Sau 30 ngày: Xóa hoàn toàn khỏi hệ thống chính.
+   Sau 90 ngày: Xóa khỏi tất cả backup.
+   Cung cấp xác nhận xóa bằng văn bản nếu yêu cầu (Gói Enterprise).
+
+=== VỀ HỖ TRỢ KỸ THUẬT ===
+
+Q: Thời gian phản hồi hỗ trợ là bao lâu?
+A: Tùy theo gói:
+   - Basic: 24 giờ làm việc
+   - Professional: 4 giờ làm việc (8:00–22:00, Thứ 2–Thứ 7)
+   - Enterprise: 1 giờ (thường), 15 phút (sự cố P0, 24/7)
+
+Q: Tôi có thể test API mà không ảnh hưởng đến dữ liệu thật không?
+A: Có. Môi trường Sandbox:
+   - URL: https://sandbox-api.gft.com
+   - Dùng API Key có prefix: gft_test_
+   - Dữ liệu sandbox tự động reset mỗi 7 ngày
+   - Không bị tính phí khi test trong sandbox

@@ -1,0 +1,93 @@
+Hướng dẫn khắc phục sự cố kết nối và hiệu suất hệ thống
+
+=== VẤN ĐỀ ĐĂNG NHẬP KHÔNG ĐƯỢC ===
+
+Triệu chứng: Nhập đúng mật khẩu nhưng không vào được.
+
+Kiểm tra theo thứ tự:
+1. Kiểm tra Caps Lock — mật khẩu phân biệt chữ hoa/thường
+2. Xóa cache và cookie của trình duyệt (Ctrl+Shift+Delete)
+3. Thử trình duyệt khác (Chrome, Firefox, Edge)
+4. Kiểm tra kết nối mạng — thử ping api.gft.com
+5. Kiểm tra xem tài khoản có bị khóa không (sau 5 lần sai)
+6. Kiểm tra status.gft.com — hệ thống đang có sự cố không?
+7. Thử đặt lại mật khẩu
+
+=== VẤN ĐỀ GIAO DIỆN HIỂN THỊ SAI / KHÔNG TẢI ĐƯỢC ===
+
+Triệu chứng: Trang trắng, lỗi 503, giao diện vỡ layout.
+
+Khắc phục:
+1. Hard refresh: Ctrl+F5 (Windows) hoặc Cmd+Shift+R (Mac)
+2. Xóa cache trình duyệt
+3. Tắt extensions (đặc biệt ad blocker, VPN extension)
+4. Kiểm tra phiên bản trình duyệt — khuyến nghị Chrome 120+, Firefox 120+, Edge 120+
+5. Thử chế độ ẩn danh (Incognito)
+6. Kiểm tra kết nối internet (tốc độ tối thiểu 1 Mbps)
+
+=== VẤN ĐỀ API PHẢN HỒI CHẬM (LATENCY CAO) ===
+
+Nguyên nhân và xử lý:
+
+1. Kết nối mạng của bạn chậm:
+   → Kiểm tra bằng: curl -w "%{time_total}" -o /dev/null https://api.gft.com/health
+   → Nếu >500ms từ phía mạng của bạn: vấn đề kết nối cục bộ
+
+2. Server đang tải cao (peak hour):
+   → Kiểm tra status.gft.com > Performance tab
+   → Nếu latency cao toàn cục: Chờ 15–30 phút
+
+3. Query quá lớn / Response quá nhiều dữ liệu:
+   → Thêm điều kiện lọc (filter) để giảm kích thước response
+   → Dùng pagination thay vì lấy toàn bộ data một lần
+
+4. Không dùng kết nối Persistent (Keep-Alive):
+   → Bật HTTP Keep-Alive trong HTTP client của bạn để tái sử dụng kết nối TCP
+   → Giảm overhead từ việc thiết lập kết nối mới mỗi request
+
+=== VẤN ĐỀ WEBHOOK KHÔNG NHẬN ĐƯỢC ===
+
+Checklist kiểm tra:
+1. URL endpoint phải là HTTPS (có SSL certificate hợp lệ, không phải self-signed)
+2. Server phải phản hồi HTTP 200 trong vòng 5 giây
+3. Firewall/Security Group phải cho phép inbound từ IP của hệ thống:
+   → Danh sách IP: docs.gft.com/webhook-ips
+4. Kiểm tra Delivery History: Dashboard > Settings > Webhooks > [Endpoint] > History
+5. Test thủ công: Dashboard > Settings > Webhooks > [Endpoint] > Send Test Event
+
+=== VẤN ĐỀ DỮ LIỆU KHÔNG ĐỒNG BỘ ===
+
+Triệu chứng: Dữ liệu trên giao diện và API không khớp nhau.
+
+Nguyên nhân thường gặp:
+  - Cache chưa được làm mới (stale cache)
+  - Có nhiều tab/cửa sổ cùng mở và chỉnh sửa
+  - Gọi API từ nhiều source cùng lúc gây race condition
+
+Khắc phục:
+  1. Reload trang để làm mới cache giao diện
+  2. Chờ 30 giây rồi kiểm tra lại (dữ liệu sync async mất vài giây)
+  3. Gọi GET /tickets/{id} để lấy trạng thái mới nhất từ API
+  4. Nếu vẫn không khớp: Gửi ticket kèm ticket ID và timestamp
+
+=== VẤN ĐỀ EMAIL KHÔNG NHẬN ĐƯỢC ===
+
+Hệ thống gửi email từ: noreply@gft.com, notifications@gft.com
+
+Nếu không nhận được email:
+1. Kiểm tra hộp Spam / Junk Mail
+2. Thêm @gft.com vào whitelist email (safe senders)
+3. Kiểm tra với IT admin xem corporate email có block domain @gft.com không
+4. Cấu hình SPF/DKIM (dành cho admin): Mail được ký bởi spf.gft.com
+
+Thời gian gửi email:
+  - Thông báo ticket: Ngay lập tức (tối đa 1 phút)
+  - Hóa đơn hàng tháng: Ngày 1 hàng tháng
+  - Nhắc nhở gia hạn: 30 ngày, 7 ngày, 1 ngày trước hạn
+  - Reset mật khẩu: Ngay lập tức (tối đa 2 phút)
+
+=== CÔNG CỤ DIAGNOSTIC ===
+
+Trang kiểm tra kết nối: https://api.gft.com/diagnostic
+Trả về: IP của bạn, latency, HTTP headers, thông tin SSL
+Dùng để debug khi gặp vấn đề kết nối phức tạp.

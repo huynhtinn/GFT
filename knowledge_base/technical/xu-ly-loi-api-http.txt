@@ -1,0 +1,94 @@
+Hướng dẫn xử lý lỗi API — HTTP 403 Forbidden, 401 Unauthorized, 500 Internal Server Error
+
+=== LỖI 403 FORBIDDEN ===
+
+Ý nghĩa: Yêu cầu bị từ chối vì không đủ quyền truy cập.
+
+Nguyên nhân phổ biến và cách khắc phục:
+
+1. API Key chưa được kích hoạt hoặc đã hết hạn
+   → Đăng nhập Dashboard > Settings > API Keys
+   → Kiểm tra trạng thái key: Active / Expired / Revoked
+   → Nếu Expired: Tạo API Key mới, cập nhật vào ứng dụng
+
+2. Địa chỉ IP chưa được whitelist
+   → Dashboard > Settings > API Security > IP Whitelist
+   → Thêm địa chỉ IP Public của server gọi API
+   → Lưu ý: IP private (192.168.x.x, 10.x.x.x) không có hiệu lực với API bên ngoài
+   → Kiểm tra IP public của bạn tại: https://ipinfo.io
+
+3. API Key đúng nhưng không có quyền với endpoint đó
+   → Một số endpoint yêu cầu scope đặc biệt (VD: admin:write, report:read)
+   → Kiểm tra danh sách permissions của key tại Dashboard > API Keys > [Tên Key] > Permissions
+   → Tạo key mới với đúng scope cần thiết
+
+4. Header Authorization không đúng định dạng
+   → Đúng: Authorization: Bearer YOUR_API_KEY
+   → Sai: Authorization: Basic YOUR_API_KEY (đây là Basic Auth, khác Bearer)
+   → Sai: Authorization: Bearer  YOUR_API_KEY (thừa khoảng trắng)
+
+=== LỖI 401 UNAUTHORIZED ===
+
+Ý nghĩa: API Key không tồn tại hoặc không hợp lệ.
+
+Nguyên nhân:
+- Copy API Key bị thiếu ký tự đầu hoặc cuối
+- Sử dụng API Key của môi trường khác (staging key dùng cho production)
+- API Key đã bị xóa (Revoked)
+
+Cách khắc phục:
+1. Copy lại API Key từ Dashboard (chú ý không có khoảng trắng thừa)
+2. Kiểm tra xem đang dùng đúng môi trường chưa (Production / Staging)
+3. Nếu key bị Revoked: Tạo key mới tại Dashboard > Settings > API Keys > Create New Key
+
+=== LỖI 500 INTERNAL SERVER ERROR ===
+
+Ý nghĩa: Lỗi phía server, không phải do client.
+
+Cách xử lý:
+1. Thử lại sau 60 giây (áp dụng chiến lược Exponential Backoff)
+2. Kiểm tra trang trạng thái hệ thống: status.gft.com
+3. Kiểm tra Payload request:
+   - Kích thước JSON body không vượt quá 10 MB
+   - Đúng Content-Type: application/json
+   - Không có ký tự đặc biệt chưa được encode (VD: emoji trong JSON)
+4. Nếu lỗi 500 liên tục quá 5 phút: Gửi ticket với request ID (trong response header: X-Request-ID)
+
+=== LỖI 429 TOO MANY REQUESTS (RATE LIMIT) ===
+
+Giới hạn theo gói:
+- Basic: 100 requests/phút
+- Professional: 500 requests/phút
+- Enterprise: 2000 requests/phút (hoặc theo hợp đồng)
+
+Cách xử lý:
+1. Kiểm tra header Retry-After trong response — cho biết bao lâu nữa có thể thử lại
+2. Áp dụng Exponential Backoff: đợi 1s → 2s → 4s → 8s → 16s...
+3. Cân nhắc tăng gói nếu thường xuyên vượt giới hạn
+
+=== LỖI 404 NOT FOUND ===
+
+Nguyên nhân thường gặp:
+- Sai endpoint URL (VD: /api/v1/tickets thay vì /api/v2/tickets)
+- ID resource không tồn tại hoặc đã bị xóa
+- Đang gọi endpoint chưa được cấp quyền (ẩn với client)
+
+=== EXPONENTIAL BACKOFF — QUY TRÌNH THỬ LẠI CHUẨN ===
+
+Khi gặp lỗi 429, 500, 502, 503, 504:
+- Lần 1: Chờ 1 giây rồi thử lại
+- Lần 2: Chờ 2 giây
+- Lần 3: Chờ 4 giây
+- Lần 4: Chờ 8 giây
+- Lần 5: Chờ 16 giây → Nếu vẫn lỗi, báo cáo sự cố cho đội kỹ thuật
+
+=== THÔNG TIN DEBUGGING CẦN CUNG CẤP KHI GỬI TICKET ===
+
+Để được hỗ trợ nhanh nhất, vui lòng cung cấp:
+1. Request ID (header X-Request-ID trong response)
+2. Timestamp (thời điểm xảy ra lỗi, kèm timezone)
+3. Endpoint đang gọi (URL đầy đủ)
+4. HTTP Method (GET / POST / PUT / DELETE)
+5. Status code nhận được
+6. Response body (nội dung lỗi trả về)
+7. 4 ký tự cuối của API Key đang dùng (KHÔNG gửi toàn bộ key)

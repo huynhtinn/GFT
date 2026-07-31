@@ -1,0 +1,93 @@
+Hướng dẫn tích hợp Webhook — Zalo ZNS, Messenger, Email Notification
+
+=== WEBHOOK LÀ GÌ? ===
+
+Webhook cho phép hệ thống chủ động gửi thông báo realtime về server của bạn
+khi có sự kiện xảy ra (ticket mới, ticket được giải quyết, v.v.)
+thay vì bạn phải liên tục gọi API để kiểm tra (polling).
+
+=== THIẾT LẬP WEBHOOK ENDPOINT ===
+
+1. Chuẩn bị endpoint nhận webhook trên server của bạn:
+   - URL phải là HTTPS (không chấp nhận HTTP)
+   - Trả về HTTP 200 trong vòng 5 giây để xác nhận nhận thành công
+   - Nếu trả về lỗi hoặc timeout: Hệ thống thử lại tối đa 3 lần (sau 1 phút, 5 phút, 30 phút)
+
+2. Đăng ký webhook tại Dashboard > Settings > Webhooks > Add Endpoint
+3. Nhập URL endpoint và chọn các event muốn nhận
+4. Hệ thống gửi test request để xác minh endpoint hoạt động
+
+=== CÁC LOẠI SỰ KIỆN (EVENTS) ===
+
+  ticket.created        — Có ticket mới được tạo
+  ticket.assigned       — Ticket được phân công cho nhân sự
+  ticket.status_changed — Trạng thái ticket thay đổi
+  ticket.resolved       — Ticket được đóng/giải quyết
+  ticket.escalated      — Ticket được leo thang lên cấp cao hơn
+  user.registered       — Có người dùng mới đăng ký
+  billing.payment_success — Thanh toán thành công
+  billing.payment_failed  — Thanh toán thất bại
+  system.alert          — Cảnh báo hệ thống
+
+=== CẤU TRÚC PAYLOAD WEBHOOK ===
+
+{
+  "event": "ticket.resolved",
+  "timestamp": "2026-07-30T10:30:00+07:00",
+  "webhook_id": "wh_xxxxxxxx",
+  "data": {
+    "ticket_id": "TCK-1042",
+    "customer_name": "Nguyễn Văn A",
+    "customer_email": "nva@company.com",
+    "subject": "Hỏi về bảng giá gói Enterprise",
+    "status": "RESOLVED_AUTO",
+    "resolved_at": "2026-07-30T10:29:55+07:00"
+  }
+}
+
+=== XÁC MINH CHỮ KÝ WEBHOOK (SIGNATURE VERIFICATION) ===
+
+Mỗi webhook request có header: X-GFT-Signature: sha256=XXXXXXXXXX
+Dùng để xác minh request đến từ hệ thống của chúng tôi, không phải từ bên thứ ba.
+
+Cách xác minh (Python):
+import hmac, hashlib
+secret = "webhook_secret_của_bạn"
+payload = request.body  # raw bytes
+expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+received = request.headers["X-GFT-Signature"].replace("sha256=", "")
+is_valid = hmac.compare_digest(expected, received)
+
+=== TÍCH HỢP ZALO ZNS ===
+
+Zalo ZNS (Zalo Notification Service) cho phép gửi thông báo chăm sóc khách hàng qua Zalo.
+
+Yêu cầu:
+- Tài khoản Zalo Official Account (OA) đã được xác minh
+- Đăng ký ZNS template tại Zalo for Business
+- Cung cấp: OA ID, Secret Key, ZNS Template ID
+
+Cấu hình:
+1. Dashboard > Settings > Integrations > Zalo ZNS
+2. Nhập OA ID và Secret Key
+3. Chọn ZNS Template cho từng loại thông báo
+4. Ánh xạ (mapping) các biến trong template với dữ liệu ticket
+
+Lưu ý ZNS:
+- ZNS chỉ gửi được đến số điện thoại đã dùng Zalo
+- Cần có opt-in (khách đồng ý nhận thông báo) theo quy định
+- Rate limit: 1000 tin/phút theo gói OA chuẩn
+
+=== LỖI WEBHOOK THƯỜNG GẶP ===
+
+1. Endpoint trả về 200 nhưng không nhận được event:
+   → Kiểm tra lại event types đã đăng ký
+   → Xem Webhook Logs tại Dashboard > Settings > Webhooks > [Endpoint] > Delivery History
+
+2. Endpoint trả về lỗi 5xx liên tục:
+   → Hệ thống thử lại 3 lần rồi đánh dấu delivery failed
+   → Không có retry sau 3 lần — cần trigger lại thủ công nếu cần
+
+3. Payload bị mất hoặc không đúng định dạng:
+   → Kiểm tra server có đọc đúng Content-Type: application/json không
+   → Raw body phải được đọc trước khi parse (tránh framework tự transform)

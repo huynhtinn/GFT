@@ -1,0 +1,133 @@
+Hướng dẫn tích hợp API — Bắt đầu nhanh (Quick Start Guide)
+
+=== THÔNG TIN CƠ BẢN ===
+
+Base URL (Production): https://api.gft.com/v2
+Base URL (Sandbox):    https://sandbox-api.gft.com/v2
+Định dạng dữ liệu: JSON (application/json)
+Xác thực: Bearer Token (API Key)
+Phiên bản API hiện tại: v2 (v1 deprecated từ 01/01/2026)
+
+=== XÁC THỰC REQUEST ===
+
+Mọi request phải có header:
+  Authorization: Bearer gft_live_xxxxxxxxxxxxxxxxxxxxxxxx
+  Content-Type: application/json (với POST/PUT/PATCH)
+  Accept: application/json
+
+=== CÁC ENDPOINT CHÍNH ===
+
+TICKETS:
+  GET    /tickets              — Lấy danh sách ticket
+  POST   /tickets              — Tạo ticket mới
+  GET    /tickets/{id}         — Lấy chi tiết ticket
+  PATCH  /tickets/{id}         — Cập nhật ticket
+  DELETE /tickets/{id}         — Xóa ticket (chỉ Admin)
+
+USERS:
+  GET    /users                — Danh sách người dùng
+  POST   /users                — Tạo người dùng mới
+  GET    /users/{id}           — Chi tiết người dùng
+  PATCH  /users/{id}           — Cập nhật thông tin
+
+REPORTS:
+  GET    /reports/summary      — Báo cáo tổng quan
+  GET    /reports/tickets      — Báo cáo chi tiết ticket
+  GET    /reports/performance  — Báo cáo hiệu suất nhân sự
+
+HEALTH:
+  GET    /health               — Kiểm tra sức khỏe hệ thống
+
+=== VÍ DỤ TẠO TICKET MỚI ===
+
+Request:
+  POST https://api.gft.com/v2/tickets
+  Authorization: Bearer gft_live_xxxx
+
+  {
+    "customer_name": "Nguyễn Văn A",
+    "customer_email": "nva@company.com",
+    "channel": "api",
+    "subject": "Lỗi 403 khi gọi API tạo đơn hàng",
+    "content": "Từ sáng nay tôi gọi API /orders bị trả về 403. API Key còn hạn đến tháng 12.",
+    "priority": "P2_MEDIUM",
+    "tags": ["api", "403", "orders"]
+  }
+
+Response (201 Created):
+  {
+    "success": true,
+    "data": {
+      "id": "TCK-2847",
+      "status": "NEW",
+      "created_at": "2026-07-30T10:15:00+07:00",
+      "estimated_response_at": "2026-07-30T14:15:00+07:00"
+    }
+  }
+
+=== VÍ DỤ LẤY DANH SÁCH TICKET ===
+
+Request:
+  GET https://api.gft.com/v2/tickets?status=ESCALATED_HUMAN&page=1&limit=20
+  Authorization: Bearer gft_live_xxxx
+
+Query Parameters:
+  status    — Lọc theo trạng thái (NEW, RESOLVED_AUTO, ESCALATED_HUMAN, ...)
+  priority  — Lọc theo độ ưu tiên (P0_CRITICAL, P1_HIGH, P2_MEDIUM, P3_LOW)
+  page      — Số trang (bắt đầu từ 1)
+  limit     — Số kết quả mỗi trang (tối đa 100)
+  from_date — Lọc từ ngày (ISO 8601: 2026-07-01)
+  to_date   — Lọc đến ngày
+  search    — Tìm kiếm theo tiêu đề hoặc nội dung ticket
+
+=== CẤU TRÚC RESPONSE LỖI ===
+
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_API_KEY",
+    "message": "The provided API key is invalid or has expired.",
+    "documentation_url": "https://docs.gft.com/errors#INVALID_API_KEY"
+  },
+  "request_id": "req_xxxxxxxxxx"
+}
+
+Các mã lỗi phổ biến:
+  INVALID_API_KEY         — API Key không hợp lệ (HTTP 401)
+  PERMISSION_DENIED       — Không đủ quyền (HTTP 403)
+  RESOURCE_NOT_FOUND      — Tài nguyên không tồn tại (HTTP 404)
+  VALIDATION_ERROR        — Dữ liệu đầu vào không hợp lệ (HTTP 422)
+  RATE_LIMIT_EXCEEDED     — Vượt quá giới hạn request (HTTP 429)
+  INTERNAL_SERVER_ERROR   — Lỗi phía server (HTTP 500)
+
+=== PAGINATION (PHÂN TRANG) ===
+
+Response luôn kèm metadata phân trang:
+  {
+    "data": [...],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 15,
+      "total_items": 287,
+      "per_page": 20,
+      "has_next": true,
+      "has_previous": false
+    }
+  }
+
+=== SDK VÀ THƯ VIỆN HỖ TRỢ ===
+
+Python SDK:
+  pip install gft-sdk
+  from gft import GFTClient
+  client = GFTClient(api_key="gft_live_xxxx")
+  tickets = client.tickets.list(status="ESCALATED_HUMAN")
+
+Node.js SDK:
+  npm install @gft/sdk
+  const { GFTClient } = require('@gft/sdk')
+  const client = new GFTClient({ apiKey: 'gft_live_xxxx' })
+  const tickets = await client.tickets.list({ status: 'ESCALATED_HUMAN' })
+
+Tài liệu đầy đủ: docs.gft.com/api
+Postman Collection: docs.gft.com/postman

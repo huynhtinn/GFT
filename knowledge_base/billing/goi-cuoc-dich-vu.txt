@@ -1,0 +1,65 @@
+Hướng dẫn các gói cước dịch vụ và cách nâng cấp, hủy gói
+
+=== CÁC GÓI DỊCH VỤ HIỆN CÓ ===
+
+1. GÓI BASIC — 1.500.000 VNĐ/tháng (hoặc 15.000.000 VNĐ/năm, tiết kiệm 2 tháng)
+   - Tối đa 100 ticket hỗ trợ/tháng
+   - Thời gian phản hồi: 24 giờ làm việc
+   - Kênh hỗ trợ: Email
+   - Lưu trữ dữ liệu: 5 GB
+   - Số người dùng (user seat): 5
+   - SLA uptime: 99.5%
+
+2. GÓI PROFESSIONAL — 5.000.000 VNĐ/tháng (hoặc 50.000.000 VNĐ/năm)
+   - Không giới hạn ticket hỗ trợ
+   - Thời gian phản hồi: 4 giờ làm việc
+   - Kênh hỗ trợ: Email + Chat trực tiếp
+   - Lưu trữ dữ liệu: 50 GB
+   - Số người dùng: Không giới hạn
+   - SLA uptime: 99.9%
+   - Báo cáo phân tích hàng tháng
+
+3. GÓI ENTERPRISE — 12.000.000 VNĐ/tháng (hoặc theo hợp đồng năm)
+   - Không giới hạn ticket hỗ trợ
+   - Thời gian phản hồi sự cố khẩn cấp (P0): dưới 15 phút
+   - Thời gian phản hồi thông thường: 1 giờ
+   - Kênh hỗ trợ: Email + Chat + Hotline 24/7 + Zalo Business
+   - Lưu trữ dữ liệu: Không giới hạn
+   - Số người dùng: Không giới hạn
+   - SLA uptime: 99.99%
+   - Dedicated Account Manager
+   - Tùy chỉnh SLA theo hợp đồng
+   - Báo cáo phân tích hàng tuần
+   - Hỗ trợ tích hợp API chuyên sâu
+
+=== CÁCH NÂNG CẤP GÓI ===
+
+1. Đăng nhập vào Dashboard tại app.gft.com
+2. Vào mục Cài đặt > Gói dịch vụ > Nâng cấp
+3. Chọn gói mới và xác nhận thanh toán
+4. Hệ thống kích hoạt gói mới ngay lập tức
+5. Phần còn lại của gói cũ được quy đổi và trừ vào hóa đơn tiếp theo
+
+=== CÁCH HỦY GÓI ===
+
+1. Đăng nhập Dashboard > Cài đặt > Gói dịch vụ > Hủy gói
+2. Xác nhận lý do hủy (tùy chọn)
+3. Gói vẫn hoạt động đến hết chu kỳ thanh toán hiện tại
+4. Dữ liệu được giữ thêm 30 ngày sau khi hết hạn để khách tải về
+5. Sau 30 ngày, toàn bộ dữ liệu bị xóa vĩnh viễn
+
+=== LƯU Ý KHI CHUYỂN GÓI ===
+
+- Nâng cấp: Có hiệu lực ngay lập tức, tính phí theo ngày sử dụng thực tế
+- Hạ cấp: Áp dụng từ chu kỳ thanh toán tiếp theo
+- Không thể hạ cấp nếu dữ liệu đang dùng vượt quá giới hạn gói mới
+- Gói Basic không hỗ trợ tích hợp API tùy chỉnh
+
+=== THANH TOÁN ===
+
+Chấp nhận các hình thức:
+- Chuyển khoản ngân hàng (Vietcombank, Techcombank, MB Bank)
+- Momo Business
+- VNPAY Business
+- Thẻ Visa/Mastercard quốc tế
+- Hóa đơn VAT theo yêu cầu (Gói Professional trở lên)

@@ -1,0 +1,58 @@
+Hướng dẫn đọc và xử lý hóa đơn — Các vấn đề thanh toán thường gặp
+
+=== CẤU TRÚC HÓA ĐƠN ===
+
+Mỗi hóa đơn bao gồm các mục sau:
+- Mã hóa đơn: INV-YYYYMM-XXXX (ví dụ: INV-202607-0042)
+- Chu kỳ thanh toán: từ ngày... đến ngày...
+- Gói dịch vụ đang dùng và đơn giá
+- Phí sử dụng thêm (nếu vượt hạn mức)
+- Thuế VAT 10% (nếu có)
+- Tổng cộng phải trả
+
+=== CÁC VẤN ĐỀ THANH TOÁN THƯỜNG GẶP ===
+
+1. BỊ TRỪ TIỀN 2 LẦN (DOUBLE BILLING)
+   Nguyên nhân thường gặp:
+   - Nhấn nút thanh toán 2 lần do kết nối chậm
+   - Lỗi hệ thống tự động gia hạn trùng với thanh toán thủ công
+   
+   Cách xử lý:
+   - Kiểm tra lịch sử giao dịch tại Dashboard > Hóa đơn > Lịch sử
+   - Chụp ảnh màn hình cả 2 giao dịch
+   - Gửi ticket với tiêu đề "Yêu cầu hoàn tiền – [Mã hóa đơn]"
+   - Nhân sự xác minh và hoàn tiền trong 3–5 ngày làm việc
+
+2. HÓA ĐƠN HIỂN THỊ SAI SỐ TIỀN
+   - Kiểm tra xem có áp dụng mã giảm giá chưa
+   - Xem lại có nâng/hạ cấp gói trong tháng không (tính theo ngày sử dụng thực tế)
+   - Nếu vẫn không khớp: Gửi ticket đính kèm ảnh hóa đơn
+
+3. THANH TOÁN THÀNH CÔNG NHƯNG DỊCH VỤ CHƯA KÍCH HOẠT
+   - Chờ tối đa 15 phút để hệ thống xử lý
+   - Thử đăng xuất và đăng nhập lại
+   - Nếu sau 30 phút vẫn chưa kích hoạt: gửi ticket kèm mã giao dịch (transaction ID)
+
+4. QUÊN THANH TOÁN / HÓA ĐƠN QUÁ HẠN
+   - Hệ thống gửi nhắc nhở qua email 7 ngày và 1 ngày trước khi đến hạn
+   - Sau ngày đến hạn: tài khoản vào trạng thái "Tạm ngưng" (Suspended)
+   - Trong 7 ngày Suspended: Vẫn truy cập được dữ liệu nhưng không thể tạo ticket mới
+   - Sau 7 ngày: Tài khoản bị khóa, cần liên hệ CSKH để mở lại
+
+5. MÃ GIẢM GIÁ / VOUCHER KHÔNG ÁP DỤNG ĐƯỢC
+   - Kiểm tra điều kiện: gói áp dụng, thời hạn sử dụng, số lần dùng tối đa
+   - Mã chỉ áp dụng 1 lần cho mỗi tài khoản (trừ khi có ghi chú khác)
+   - Không thể áp dụng mã giảm giá sau khi đã thanh toán thành công
+
+=== YÊU CẦU XUẤT HÓA ĐƠN VAT ===
+
+- Cung cấp: Tên công ty, MST (mã số thuế), địa chỉ đăng ký kinh doanh
+- Thời hạn yêu cầu: Trong vòng 5 ngày làm việc sau ngày phát sinh hóa đơn
+- Hóa đơn VAT được xuất trong vòng 3 ngày làm việc
+- Gửi qua email hoặc phát hành điện tử theo quy định
+
+=== LIÊN HỆ HỖ TRỢ THANH TOÁN ===
+
+Email chuyên biệt: billing@gft.com
+Hotline (Gói Enterprise): 1800-xxxx (miễn phí, 8h–22h các ngày)
+Chat trực tiếp: Chỉ dành cho Gói Professional và Enterprise

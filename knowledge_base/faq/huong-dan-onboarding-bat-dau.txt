@@ -1,0 +1,85 @@
+Hướng dẫn onboarding — Bắt đầu sử dụng hệ thống lần đầu
+
+=== CHÀO MỪNG ĐẾN VỚI HỆ THỐNG HỖ TRỢ KHÁCH HÀNG ===
+
+Tài liệu này giúp bạn thiết lập và sử dụng hệ thống trong 15 phút đầu tiên.
+
+=== BƯỚC 1: TẠO TÀI KHOẢN VÀ ĐĂNG NHẬP ===
+
+1. Truy cập app.gft.com > Đăng ký tài khoản
+2. Xác nhận email (kiểm tra hộp Spam nếu không thấy)
+3. Hoàn thiện hồ sơ: Tên, số điện thoại, thông tin công ty
+4. Chọn gói dịch vụ phù hợp (Bắt đầu với gói 14 ngày miễn phí)
+
+=== BƯỚC 2: THIẾT LẬP BAN ĐẦU ===
+
+2.1. Thêm thành viên nhóm:
+  Dashboard > Settings > Team Members > Invite Member
+  Mời đồng nghiệp với vai trò phù hợp (Admin / Agent / Viewer)
+
+2.2. Cấu hình kênh tiếp nhận:
+  Dashboard > Settings > Channels
+  - Email: Cấu hình forward email hỗ trợ về hệ thống
+  - Widget chat: Nhúng JavaScript snippet vào website
+  - API: Tạo API Key để tích hợp tự động
+
+2.3. Tạo phân loại ticket (Categories):
+  Dashboard > Settings > Ticket Categories
+  Tạo các nhóm phù hợp với nghiệp vụ của bạn.
+
+=== BƯỚC 3: TẠO TICKET ĐẦU TIÊN (TEST) ===
+
+Cách 1 — Qua giao diện web:
+  Dashboard > Tickets > New Ticket
+  Điền thông tin khách hàng, chủ đề, nội dung, nhấn Submit.
+
+Cách 2 — Qua API (Sandbox):
+  POST https://sandbox-api.gft.com/v2/tickets
+  Authorization: Bearer gft_test_xxxx
+  Body: {"subject": "Test ticket", "content": "Nội dung test", ...}
+
+Cách 3 — Gửi email:
+  Gửi email tới địa chỉ support@yourcompany.gft.com (được cấp sau khi đăng ký)
+
+=== BƯỚC 4: THEO DÕI VÀ XỬ LÝ TICKET ===
+
+Màn hình chính Dashboard hiển thị:
+  - Inbox: Ticket mới chưa được phân công
+  - My Tickets: Ticket được phân công cho bạn
+  - All Tickets: Toàn bộ ticket trong hệ thống (Admin)
+
+Trạng thái ticket:
+  - NEW → ASSIGNED → IN_PROGRESS → RESOLVED / ESCALATED
+
+Phím tắt hữu ích:
+  N — Tạo ticket mới
+  / — Tìm kiếm ticket
+  Ctrl+Enter — Gửi phản hồi
+  Esc — Đóng popup/modal
+
+=== BƯỚC 5: CẤU HÌNH THÔNG BÁO ===
+
+Dashboard > Settings > Notifications
+
+Có thể nhận thông báo qua:
+  - Email: Khi có ticket mới, ticket được phân công, ticket khách hàng phản hồi
+  - Browser push notification
+  - Webhook (cho tích hợp với Slack, Teams, v.v.)
+
+=== CÁC TÀI NGUYÊN HỮU ÍCH ===
+
+Tài liệu API đầy đủ:     docs.gft.com/api
+Video hướng dẫn:         gft.com/tutorials
+Blog kỹ thuật:            blog.gft.com
+Cộng đồng & Forum:       community.gft.com
+Trạng thái hệ thống:     status.gft.com
+Changelog (cập nhật mới): gft.com/changelog
+
+=== HỖ TRỢ TRONG QUÁ TRÌNH ONBOARDING ===
+
+Gói Professional và Enterprise có Customer Success Manager riêng.
+Lịch đặt buổi onboarding 1-1 (45 phút): calendar.gft.com/onboarding
+
+Câu hỏi nhanh:
+  Email: support@gft.com
+  Chat: Nhấn nút ? ở góc dưới bên phải màn hình khi đã đăng nhập

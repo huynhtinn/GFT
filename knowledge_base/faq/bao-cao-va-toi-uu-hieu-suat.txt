@@ -1,0 +1,90 @@
+Hướng dẫn phân tích báo cáo và tối ưu hiệu suất nhóm hỗ trợ
+
+=== CÁC LOẠI BÁO CÁO CÓ SẴN ===
+
+1. BÁO CÁO TỔNG QUAN (SUMMARY DASHBOARD)
+   Đường dẫn: Dashboard > Reports > Summary
+   Hiển thị (thời gian thực):
+   - Tổng số ticket hôm nay / tuần / tháng
+   - Số ticket theo trạng thái (New, In Progress, Resolved, Escalated)
+   - Thời gian phản hồi trung bình (Average First Response Time)
+   - Thời gian giải quyết trung bình (Average Resolution Time)
+   - Điểm hài lòng khách hàng (CSAT Score)
+
+2. BÁO CÁO HIỆU SUẤT NHÂN SỰ
+   Đường dẫn: Dashboard > Reports > Agent Performance
+   Chỉ số:
+   - Số ticket xử lý / nhân sự / kỳ
+   - Thời gian phản hồi đầu tiên trung bình theo nhân sự
+   - Điểm CSAT theo nhân sự
+   - Tỷ lệ ticket giải quyết lần đầu (First Contact Resolution - FCR)
+   - Thời gian xử lý trung bình (Average Handling Time - AHT)
+
+3. BÁO CÁO XU HƯỚNG TICKET
+   Đường dẫn: Dashboard > Reports > Ticket Trends
+   - Biểu đồ volume theo giờ / ngày / tuần
+   - Phân tích theo kênh (email, web, Zalo, API)
+   - Phân tích theo nhóm yêu cầu (billing, technical, faq...)
+   - Phân tích theo độ ưu tiên
+
+4. BÁO CÁO AI PERFORMANCE (Dành cho admin)
+   Đường dẫn: Dashboard > Reports > AI Analytics
+   - Tỷ lệ tự động giải quyết (Auto-Resolve Rate): % ticket RESOLVED_AUTO
+   - Tỷ lệ leo thang (Escalation Rate): % ticket ESCALATED_HUMAN
+   - Tỷ lệ phát hiện spam (Spam Detection Rate)
+   - Độ tin cậy trung bình của AI (Average Confidence Score)
+   - Phân tích độ chính xác phân loại intent
+
+=== CÁC KPI QUAN TRỌNG VÀ BENCHMARK ===
+
+First Response Time (FRT) — Thời gian từ khi tạo ticket đến phản hồi đầu tiên:
+  - Xuất sắc: < 1 giờ
+  - Tốt: 1–4 giờ
+  - Cần cải thiện: > 4 giờ
+
+Average Resolution Time (ART) — Thời gian từ tạo đến đóng ticket:
+  - Xuất sắc: < 24 giờ
+  - Tốt: 24–48 giờ
+  - Cần cải thiện: > 48 giờ
+
+CSAT Score — Điểm hài lòng khách hàng (thang 1–5):
+  - Xuất sắc: > 4.5
+  - Tốt: 4.0–4.5
+  - Cần cải thiện: < 4.0
+
+First Contact Resolution (FCR) — Tỷ lệ giải quyết không cần trao đổi thêm:
+  - Xuất sắc: > 70%
+  - Tốt: 50–70%
+  - Cần cải thiện: < 50%
+
+Auto-Resolve Rate (Tỷ lệ AI tự động giải quyết):
+  - Mục tiêu: > 70% (nghĩa là AI xử lý được 70%, nhân sự chỉ xử lý 30%)
+
+=== XUẤT BÁO CÁO ===
+
+Định dạng xuất:
+  - CSV: Phù hợp import vào Excel, Google Sheets
+  - PDF: Phù hợp chia sẻ và trình bày
+  - JSON: Phù hợp tích hợp với hệ thống BI khác (Power BI, Tableau)
+
+Lịch gửi báo cáo tự động:
+  Dashboard > Reports > Scheduled Reports > Create Schedule
+  Chọn: Loại báo cáo, tần suất (hàng ngày/tuần/tháng), email nhận
+
+=== GỢI Ý TỐI ƯU HIỆU SUẤT ===
+
+Nếu Auto-Resolve Rate thấp (<50%):
+  → Bổ sung thêm tài liệu vào kho tri thức Qdrant
+  → Kiểm tra lại ngưỡng Confidence Score trong cài đặt
+
+Nếu Escalation Rate quá cao (>50%):
+  → Phần lớn ticket có thể do kho tri thức chưa đủ
+  → Phân tích "escalation reasons" để biết loại câu hỏi nào AI thường bỏ lọt
+
+Nếu CSAT thấp:
+  → Xem lại chất lượng bản nháp AI — có thể prompt cần điều chỉnh
+  → Tăng max_tokens cho các câu trả lời phức tạp
+
+Nếu FRT chậm vào giờ cao điểm:
+  → Xem biểu đồ volume theo giờ → thêm nhân sự trực vào giờ peak
+  → Cân nhắc tăng ngưỡng Auto-Resolve để AI xử lý nhiều hơn

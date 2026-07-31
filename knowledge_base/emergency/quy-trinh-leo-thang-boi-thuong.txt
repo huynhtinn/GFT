@@ -1,0 +1,91 @@
+Quy trình leo thang nội bộ và chính sách bồi thường khiếu nại
+
+=== NGUYÊN TẮC TIẾP NHẬN KHIẾU NẠI ===
+
+Mọi khiếu nại của khách hàng đều phải được:
+  1. Xác nhận tiếp nhận trong vòng 1 giờ làm việc
+  2. Đồng cảm với sự bất tiện mà khách hàng gặp phải
+  3. Cung cấp timeline xử lý rõ ràng
+  4. Không tranh luận hoặc đổ lỗi cho khách hàng trước khi điều tra
+
+=== PHÂN LOẠI KHIẾU NẠI VÀ THẨM QUYỀN XỬ LÝ ===
+
+Cấp 1 — Nhân sự CSKH xử lý (giá trị bồi thường < 500.000 VNĐ hoặc < 1 tháng phí dịch vụ):
+  - Lỗi thanh toán nhỏ
+  - Trải nghiệm dịch vụ kém chất lượng
+  - Thời gian phản hồi chậm không đáng kể
+
+Cấp 2 — Team Leader / Supervisor xử lý (500.000 – 5.000.000 VNĐ hoặc 1–3 tháng):
+  - Khiếu nại lặp đi lặp lại chưa được giải quyết
+  - Yêu cầu ngoại lệ chính sách
+  - Khách hàng đe dọa churn (hủy dịch vụ)
+  - Sự cố ảnh hưởng đến hoạt động kinh doanh của khách
+
+Cấp 3 — Giám đốc / C-level xử lý (> 5.000.000 VNĐ hoặc > 3 tháng, hoặc rủi ro pháp lý):
+  - Tranh chấp pháp lý tiềm tàng
+  - Khách hàng Enterprise lớn đe dọa kiện tụng
+  - Vi phạm SLA nghiêm trọng
+  - Sự cố ảnh hưởng đến uy tín công ty
+
+=== QUY TRÌNH KHIẾU NẠI TIÊU CHUẨN ===
+
+Bước 1 — Tiếp nhận (trong vòng 1 giờ):
+  Xác nhận đã nhận được khiếu nại và cho khách biết ai đang phụ trách.
+
+Bước 2 — Điều tra (trong vòng 24 giờ):
+  Thu thập đầy đủ thông tin:
+  - Logs giao dịch, lịch sử thanh toán
+  - Lịch sử ticket trước đó của khách
+  - Báo cáo sự cố hệ thống (nếu liên quan)
+
+Bước 3 — Đề xuất giải pháp (trong vòng 48 giờ):
+  Đề xuất bồi thường hoặc giải pháp và trình bày với khách.
+  KHÔNG được đưa ra bồi thường vượt thẩm quyền mà chưa có phê duyệt.
+
+Bước 4 — Thực hiện và Đóng khiếu nại:
+  Sau khi khách đồng ý, thực hiện ngay trong ngày làm việc.
+  Gửi xác nhận bằng văn bản/email cho khách.
+  Đóng ticket và ghi nhận vào hệ thống.
+
+=== CHÍNH SÁCH BỒI THƯỜNG ===
+
+Bồi thường tiêu chuẩn theo loại sự cố:
+
+Gián đoạn dịch vụ (downtime) vượt SLA:
+  - Vượt 1–4 giờ: Credit 1 ngày phí dịch vụ
+  - Vượt 4–12 giờ: Credit 3 ngày phí dịch vụ
+  - Vượt 12–24 giờ: Credit 1 tuần phí dịch vụ
+  - Vượt 24 giờ: Credit 1 tháng phí dịch vụ + họp Post-mortem với khách
+
+Lỗi thanh toán:
+  - Hoàn 100% số tiền bị trừ sai
+  - Thêm credit 10% giá trị giao dịch như lời xin lỗi (theo quyết định của Supervisor)
+
+Mất mát dữ liệu:
+  - Khôi phục từ backup gần nhất
+  - Credit 1 tháng phí dịch vụ
+  - Báo cáo chi tiết về nguyên nhân và biện pháp phòng ngừa
+
+=== TRƯỜNG HỢP KHÁCH HÀNG ĐANG BỨC XÚC (HIGH EMOTION HANDLING) ===
+
+Khi khách hàng đang rất bức xúc:
+  1. Lắng nghe hoàn toàn — không ngắt lời
+  2. Công nhận cảm xúc: "Tôi hiểu đây là trải nghiệm rất khó chịu..."
+  3. Xin lỗi chân thành về sự bất tiện (không nhất thiết nhận lỗi về pháp lý)
+  4. Tập trung vào giải pháp: "Điều tôi có thể làm ngay bây giờ là..."
+  5. Nếu không thể giải quyết ngay: Đặt deadline cụ thể và giữ lời
+  6. Không tranh luận hoặc giải thích kỹ thuật quá nhiều khi khách đang bức xúc
+
+Câu mẫu xử lý tình huống bức xúc:
+  "Kính chào [tên khách], tôi hiểu đây là sự cố nghiêm trọng ảnh hưởng đến công việc của bạn.
+  Tôi xin lỗi về trải nghiệm này. Tôi sẽ [hành động cụ thể] để giải quyết trong [thời gian].
+  Tôi sẽ cập nhật cho bạn mỗi [X] giờ cho đến khi vấn đề được xử lý xong."
+
+=== GHI CHÚ SAU KHI XỬ LÝ KHIẾU NẠI ===
+
+Sau mỗi vụ khiếu nại lớn, ghi lại:
+  - Nguyên nhân gốc rễ (Root Cause)
+  - Giải pháp đã áp dụng
+  - Bồi thường đã thực hiện
+  - Đề xuất cải tiến để tránh tái xảy ra
+  - Mức độ hài lòng của khách sau xử lý (gửi survey CSAT)

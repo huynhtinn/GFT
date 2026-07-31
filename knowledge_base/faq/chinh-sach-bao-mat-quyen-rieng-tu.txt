@@ -1,0 +1,85 @@
+Chính sách bảo mật dữ liệu và quyền riêng tư khách hàng
+
+=== CAM KẾT BẢO MẬT ===
+
+Chúng tôi cam kết bảo vệ dữ liệu của khách hàng theo tiêu chuẩn quốc tế cao nhất.
+Mọi dữ liệu được xử lý tuân thủ Nghị định 13/2023/NĐ-CP (Việt Nam) về bảo vệ dữ liệu cá nhân
+và các nguyên tắc GDPR cơ bản.
+
+=== DỮ LIỆU CHÚNG TÔI THU THẬP ===
+
+Dữ liệu tài khoản:
+  - Tên, email, số điện thoại
+  - Thông tin công ty (nếu là tài khoản doanh nghiệp)
+  - Thông tin thanh toán (được mã hóa và xử lý bởi cổng thanh toán đối tác)
+
+Dữ liệu sử dụng dịch vụ:
+  - Nội dung ticket hỗ trợ
+  - Lịch sử tương tác với hệ thống
+  - Logs kỹ thuật (IP, user agent, timestamp)
+  - Báo cáo và phân tích sử dụng
+
+=== CÁCH CHÚNG TÔI BẢO VỆ DỮ LIỆU ===
+
+Mã hóa:
+  - Dữ liệu khi lưu trữ (at rest): AES-256
+  - Dữ liệu khi truyền tải (in transit): TLS 1.3
+  - Mật khẩu: bcrypt với salt ngẫu nhiên (không bao giờ lưu plaintext)
+  - Thông tin thẻ tín dụng: KHÔNG lưu trực tiếp — xử lý qua PCI-DSS compliant gateway
+
+Kiểm soát truy cập:
+  - Phân quyền tối thiểu (Principle of Least Privilege)
+  - Multi-factor Authentication (MFA) cho tài khoản nhân viên nội bộ
+  - Audit log đầy đủ mọi truy cập dữ liệu khách hàng
+  - Xem xét quyền truy cập định kỳ mỗi 3 tháng
+
+Hạ tầng:
+  - Vận hành trên AWS (Region Singapore: ap-southeast-1)
+  - Backup dữ liệu tại 2 vùng địa lý khác nhau
+  - DDoS protection và WAF (Web Application Firewall)
+
+=== QUYỀN CỦA KHÁCH HÀNG ===
+
+Theo quy định pháp luật, khách hàng có các quyền sau:
+
+1. Quyền truy cập: Xem toàn bộ dữ liệu cá nhân chúng tôi đang lưu trữ
+   → Dashboard > Settings > Privacy > Download My Data
+
+2. Quyền chỉnh sửa: Yêu cầu sửa thông tin không chính xác
+   → Dashboard > Settings > Profile
+   hoặc gửi email tới privacy@gft.com
+
+3. Quyền xóa: Yêu cầu xóa toàn bộ dữ liệu ("Right to be Forgotten")
+   → Gửi email tới privacy@gft.com với tiêu đề "Yêu cầu xóa dữ liệu"
+   → Dữ liệu bị xóa hoàn toàn trong vòng 30 ngày
+
+4. Quyền chuyển dữ liệu: Nhận dữ liệu của bạn ở định dạng có thể đọc được
+   → Dashboard > Settings > Data Export (CSV/JSON)
+
+5. Quyền phản đối: Từ chối việc xử lý dữ liệu cho mục đích marketing
+   → Dashboard > Settings > Notifications > Unsubscribe All
+
+=== CHIA SẺ DỮ LIỆU VỚI BÊN THỨ BA ===
+
+Chúng tôi KHÔNG bán dữ liệu của bạn.
+
+Dữ liệu có thể được chia sẻ với:
+  - Đối tác thanh toán (Momo, VNPAY, Stripe) — Chỉ thông tin cần thiết cho giao dịch
+  - Nhà cung cấp hạ tầng cloud (AWS) — Được ký NDA và tuân thủ GDPR
+  - Cơ quan nhà nước — Chỉ khi có yêu cầu hợp pháp bằng văn bản
+
+=== THÔNG BÁO VI PHẠM DỮ LIỆU ===
+
+Trong trường hợp có sự cố bảo mật ảnh hưởng đến dữ liệu khách hàng:
+  - Thông báo tới khách hàng bị ảnh hưởng trong vòng 72 giờ
+  - Thông báo tới cơ quan quản lý theo quy định pháp luật
+  - Cung cấp báo cáo chi tiết về phạm vi và biện pháp khắc phục
+
+=== LIÊN HỆ VỀ BẢO MẬT VÀ QUYỀN RIÊNG TƯ ===
+
+Data Protection Officer (DPO): privacy@gft.com
+Báo cáo lỗ hổng bảo mật: security@gft.com
+PGP Key: Có sẵn tại keyserver.ubuntu.com (tìm: security@gft.com)
+
+Bug Bounty Program: Chúng tôi có chương trình thưởng cho người phát hiện lỗ hổng bảo mật.
+Chi tiết tại: gft.com/security/bug-bounty
