@@ -28,16 +28,21 @@
 2. Đăng nhập tài khoản **Khách hàng** (`customer` / `123`).
 3. Mở Sidebar, điểm qua giao diện và sẵn sàng tại tab **`Tiếp Nhận Ticket`**.
 
-#### 🎙️ Kịch bản Lời thoại Chuyên môn (Technical Script):
-> *"Em chào Anh/Chị trong Hội đồng Kỹ thuật! Hôm nay em xin trình bày về kiến trúc của **Autonomous Customer Support Agent System** — một hệ thống xử lý hỗ trợ kỹ thuật tự động hóa dựa trên **LangGraph State Machine** và **Advanced RAG Architecture**.*
+#### 🎙️ Kịch bản Lời thoại Chuyên môn (Dễ hiểu & Thuyết phục):
+> *"Em chào Anh/Chị trong Hội đồng Kỹ thuật! Hôm nay em xin trình bày về kiến trúc của **Autonomous Customer Support Agent System** — hệ thống tổng đài hỗ trợ tự động hóa dựa trên **LangGraph State Machine** và **Advanced RAG Architecture**.*
 > 
-> *Đầu tiên, về mặt **System Design**: Tại sao em lựa chọn **LangGraph State Machine** thay vì một Linear Chain hoặc Directed Acyclic Graph (DAG) thông thường?*
+> *Đầu tiên, về mặt **Thiết kế Kiến trúc (System Design)**: Tại sao em lại chọn **LangGraph State Machine** thay vì viết một chuỗi lệnh chạy thẳng từ trên xuống dưới?*
 > 
-> *Trong bài toán Production CSKH thực tế:*
-> 1. *Các yêu cầu hỗ trợ **không đi theo đường thẳng**. Một ticket có thể bị từ chối do Spam (`SPAM_CLOSED`), thiếu slots cần lặp lại câu hỏi làm rõ (`CLARIFICATION_SENT` - Cyclic Loop), hoặc kích hoạt chuyển giao con người (`ESCALATED_HUMAN`).*
-> 2. *Em cần một **Stateful Architecture** có khả năng duy trì trạng thái dữ liệu (State Persistence), hỗ trợ **Checkpointer (MemorySaver)** để tạm dừng/khôi phục luồng thi hành tại các điểm Human-in-the-Loop.*
+> *Trong thực tế chăm sóc khách hàng, **luồng xử lý không bao giờ đi theo đường thẳng**:*
+> - *Nếu gặp tin rác hay quảng cáo lừa đảo ➔ Hệ thống phải tự ngắt và đóng ticket ngay (`SPAM_CLOSED`).*
+> - *Nếu khách hàng báo lỗi mà đưa thiếu thông tin (ví dụ: báo lỗi API nhưng quên gửi API Key) ➔ AI phải **quay ngược lại đặt câu hỏi làm rõ** cho đến khi đủ dữ liệu mới đi tiếp (`CLARIFICATION_SENT` - Vòng lặp Cyclic Loop).*
+> - *Nếu gặp ca nhạy cảm như đòi hoàn tiền hay khiếu nại ➔ AI phải **tạm dừng lại**, chuyển thông tin cho nhân sự duyệt rồi mới xử lý tiếp (`ESCALATED_HUMAN`).*
 > 
-> *Hệ thống của em đóng gói State dưới dạng `TypedDict` chặt chẽ và luân chuyển qua **9 Node Agent chuyên biệt**: từ **Spam Inspector**, **Intent/Priority Classifier**, **Slot Completeness Inspector**, cho tới **Supervisor Coordinator**, **Query Optimizer & Expander**, **Qdrant RAG Engine**, **Reasoning Layer**, **Guardrails Router** và **HITL Briefing Generator**.*"
+> *Để làm được điều đó, em cần một kiến trúc **"Có bộ nhớ trạng thái" (Stateful Architecture)**:*
+> - *Mỗi Ticket khi đi qua hệ thống được đóng gói thành một đối tượng trạng thái chung (`State`).*
+> - **LangGraph Checkpointer** đóng vai trò như một **"nút Bookmark tạm dừng & khôi phục"**: khi cần con người can thiệp (Human-in-the-Loop), hệ thống sẽ lưu lại chính xác trạng thái hiện tại. Sau khi nhân sự duyệt xong, luồng sẽ chạy tiếp từ đúng điểm dừng đó mà không phải chạy lại từ đầu.*
+> 
+> *Toàn bộ quy trình này được em chia nhỏ thành **9 Node Agent chuyên biệt**: từ Spam Inspector, Phân loại Intent, Kiểm tra Slot thiếu, Supervisor điều phối, Tối ưu câu hỏi, RAG Vector Engine, Suy luận CoT, Guardrails Router cho đến AI Briefing Generator.*"
 
 ---
 
