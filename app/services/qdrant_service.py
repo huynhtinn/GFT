@@ -128,43 +128,5 @@ class QdrantKBEngine:
 # Global Qdrant KB instance
 qdrant_kb = QdrantKBEngine()
 
-def seed_initial_kb():
-    """Khởi tạo kho tri thức mặc định cho Qdrant."""
-    documents = [
-        {
-            "doc_id": "KB-POL-001",
-            "title": "Chính sách Hoàn tiền & Hủy dịch vụ năm 2026",
-            "category": "Thanh toán & Hóa đơn",
-            "content": "Hoàn tiền 100% nếu tài khoản phát sinh lỗi thanh toán trùng lặp (Double billing) hoặc gói cước bị gián đoạn quá 48 giờ liên tục. Thời gian xử lý hoàn tiền 3-5 ngày làm việc qua Momo/VNPAY.",
-            "tags": ["hoàn tiền", "thanh toán", "hủy gói", "momo", "vnpay"]
-        },
-        {
-            "doc_id": "KB-TECH-002",
-            "title": "Hướng dẫn Xử lý Sự cố Kết nối API & Lỗi HTTP 500 / 403",
-            "category": "Kỹ thuật & Tích hợp",
-            "content": "Lỗi 403 Forbidden: Kiểm tra API Key hết hạn hoặc chưa whitelist IP Client. Lỗi 500 Internal Error: Payload JSON đúng format <10MB. Thử lại sau 60s với Exponential Backoff.",
-            "tags": ["lỗi 403", "lỗi 500", "api key", "ip client", "kỹ thuật"]
-        },
-        {
-            "doc_id": "KB-PRICE-003",
-            "title": "Bảng giá Gói cước Enterprise & Quyền lợi SLA",
-            "category": "Hỏi đáp Thông tin",
-            "content": "Gói Enterprise: Từ 12.000.000 VNĐ/tháng, không giới hạn ticket, cam kết SLA 99.99% uptime máy chủ, phản hồi sự cố khẩn cấp < 15 phút.",
-            "tags": ["bảng giá", "enterprise", "gói cước", "sla 99.9%"]
-        },
-        {
-            "doc_id": "KB-SEC-004",
-            "title": "Quy trình Xử lý Sự cố Khẩn cấp (P0 Emergency Protocol)",
-            "category": "Quy trình Khẩn cấp",
-            "content": "Sự cố P0: Sập máy chủ toàn bộ hoặc nghi ngờ rò rỉ dữ liệu. AI Agent KHÔNG TỰ XỬ LÝ các case P0, bắt buộc chuyển thẳng cho Trưởng ca DevOps trực tiếp can thiệp.",
-            "tags": ["khẩn cấp", "p0", "sập máy chủ", "rò rỉ dữ liệu", "devops"]
-        }
-    ]
-
-    for doc in documents:
-        qdrant_kb.upsert_document(**doc)
-
-# Initialize seed on module import
-seed_initial_kb()
 
 

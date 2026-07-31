@@ -186,6 +186,20 @@ h2, h3, h4 {
     margin-top: 10px;
     color: var(--text-color, inherit);
 }
+.citation-title {
+    color: var(--primary-color, #4f46e5) !important;
+    font-weight: 700;
+}
+.citation-meta {
+    color: var(--text-color, #475569) !important;
+    opacity: 0.7;
+    font-style: italic;
+}
+.citation-snippet {
+    color: var(--text-color, #1e293b) !important;
+    background: transparent !important;
+}
+
 .log-step {
     border-left: 3px solid #6366f1;
     padding-left: 12px;
@@ -486,8 +500,8 @@ if "Tiếp Nhận Ticket" in page:
             for c in citations:
                 st.markdown(f"""
                 <div class="citation-card">
-                    <strong style="color: #a5b4fc;">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
-                    <code style="color: #e2e8f0; background: transparent;">"{c.get('snippet')}"</code>
+                    <strong class="citation-title">[{c.get('docId')}] {c.get('docTitle')}</strong> — <em class="citation-meta">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                    <code class="citation-snippet">"{c.get('snippet')}"</code>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -645,8 +659,8 @@ elif "Tra Cứu Tri Thức" in page:
             for idx, c in enumerate(citations):
                 st.markdown(f"""
                 <div class="citation-card">
-                    <strong style="color: #818cf8;">#{idx+1} [{c.get('docId')}] {c.get('docTitle')}</strong> — <em style="color: #94a3b8;">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
-                    <p style="margin-top: 6px; color: #e2e8f0;">{c.get('snippet')}</p>
+                    <strong class="citation-title">#{idx+1} [{c.get('docId')}] {c.get('docTitle')}</strong> — <em class="citation-meta">Mục: {c.get('section')} (Độ tương đồng: {round(c.get('relevanceScore', 0)*100, 1)}%)</em><br>
+                    <p class="citation-snippet">{c.get('snippet')}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
