@@ -1,14 +1,57 @@
 import os
-import math
+import hashlib
+import json
+import urllib.request
+import urllib.error
 from typing import List, Dict, Any, Optional
 import numpy as np
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue
+from qdrant_client.models import VectorParams, Distance, PointStruct
 
 from app.config.settings import settings
 
 COLLECTION_NAME = settings.QDRANT_COLLECTION_NAME
 VECTOR_DIM = settings.VECTOR_DIM
+
+# ── Embedding Model (Sentence Transformers) ────────────────────────────────────
+# Sử dụng paraphrase-multilingual-MiniLM-L12-v2 cho semantic embedding thực sự.
+# Model này hỗ trợ 50+ ngôn ngữ (bao gồm tiếng Việt), output 384 dimensions.
+_embedding_model = None
+
+def _get_embedding_model():
+    """Lazy-load SentenceTransformer model (chỉ tải 1 lần duy nhất)."""
+    global _embedding_model
+    if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+        model_name = settings.EMBEDDING_MODEL_NAME
+        print(f"[Embedding] Đang tải model '{model_name}'...")
+        _embedding_model = SentenceTransformer(model_name)
+        print(f"[Embedding] Model '{model_name}' đã sẵn sàng (dim={_embedding_model.get_embedding_dimension()}).")
+    return _embedding_model
+
+
+# ── Chunking (RecursiveCharacterTextSplitter) ──────────────────────────────────
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+def _create_text_splitter() -> RecursiveCharacterTextSplitter:
+    """Tạo text splitter tách theo ranh giới ngữ nghĩa (heading, đoạn, câu)."""
+    return RecursiveCharacterTextSplitter(
+        chunk_size=settings.RAG_CHUNK_SIZE,
+        chunk_overlap=settings.RAG_CHUNK_OVERLAP,
+        separators=[
+            "\n===",       # Heading lớn (=== SECTION ===)
+            "\n---",       # Horizontal rule
+            "\n\n",        # Đoạn văn (paragraph)
+            "\n",          # Xuống dòng
+            "。",           # Dấu chấm câu tiếng Nhật (nếu có)
+            ".",           # Dấu chấm câu
+            " ",           # Khoảng trắng (word boundary)
+            "",            # Fallback: từng ký tự
+        ],
+        length_function=len,
+        is_separator_regex=False,
+    )
+
 
 class QdrantKBEngine:
     def __init__(self, url: Optional[str] = None, in_memory: bool = False):
@@ -29,8 +72,8 @@ class QdrantKBEngine:
             print(f"[Qdrant] Could not connect to {qdrant_url} ({e}). Falling back to In-Memory mode.")
             self.client = QdrantClient(location=":memory:")
 
-
         self._init_collection()
+        self._text_splitter = _create_text_splitter()
 
     def _init_collection(self):
         """Khởi tạo collection Qdrant với thông số HNSW Vector Search."""
@@ -46,36 +89,62 @@ class QdrantKBEngine:
         except Exception as err:
             print(f"Collection init warning: {err}")
 
-    def _simple_embedding(self, text: str) -> List[float]:
-        """Mô phỏng hàm sinh Vector Embedding (384 dim normalized)."""
-        vec = np.zeros(VECTOR_DIM, dtype=float)
-        words = text.lower().split()
-        for idx, word in enumerate(words):
-            hash_val = sum(ord(c) for c in word)
-            pos = hash_val % VECTOR_DIM
-            vec[pos] += 1.0 / (idx + 1)
+    def _embed(self, texts: List[str]) -> List[List[float]]:
+        """Sinh semantic embedding vectors bằng SentenceTransformer (batch).
         
-        norm = np.linalg.norm(vec)
-        if norm > 0:
-            vec = vec / norm
-        else:
-            vec = np.random.randn(VECTOR_DIM)
-            vec = vec / np.linalg.norm(vec)
+        Model: paraphrase-multilingual-MiniLM-L12-v2
+        - 384 dimensions, cosine similarity
+        - Hỗ trợ tiếng Việt và 50+ ngôn ngữ khác
+        """
+        model = _get_embedding_model()
+        embeddings = model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+        return embeddings.tolist()
+
+    def _embed_single(self, text: str) -> List[float]:
+        """Sinh embedding vector cho một câu truy vấn duy nhất."""
+        return self._embed([text])[0]
+
+    @staticmethod
+    def _deterministic_point_id(doc_id: str, chunk_idx: int) -> int:
+        """Tạo Point ID ổn định, deterministic bằng hashlib (không phụ thuộc PYTHONHASHSEED).
         
-        return vec.tolist()
+        Đảm bảo cùng doc_id + chunk_idx luôn cho ra cùng point_id,
+        tránh bị trùng lặp khi re-upsert.
+        """
+        raw = f"{doc_id}_chunk_{chunk_idx}"
+        hash_hex = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        # Lấy 8 hex chars đầu (32 bit) để tạo positive int cho Qdrant
+        return int(hash_hex[:8], 16)
 
     def upsert_document(self, doc_id: str, title: str, category: str, content: str, tags: List[str], version: str = "v1.0"):
-        """Nạp và chia đoạn (chunking) tài liệu vào Qdrant Vector Collection."""
-        chunk_size = settings.RAG_CHUNK_SIZE
-        overlap = settings.RAG_CHUNK_OVERLAP
-        step = max(1, chunk_size - overlap)
+        """Nạp và chia đoạn (chunking) tài liệu vào Qdrant Vector Collection.
         
-        chunks = [content[i:i+chunk_size] for i in range(0, len(content), step)]
-        points = []
+        Sử dụng RecursiveCharacterTextSplitter để chia theo ranh giới ngữ nghĩa
+        (heading → paragraph → sentence → word), tránh cắt ngang giữa câu.
+        """
+        # Tiền xử lý: chuẩn hóa khoảng trắng thừa
+        clean_content = content.strip()
+        if not clean_content:
+            return
 
-        for idx, chunk in enumerate(chunks):
-            point_id = hash(f"{doc_id}_{idx}") & 0x7FFFFFFF
-            vector = self._simple_embedding(f"{title} {category} {' '.join(tags)} {chunk}")
+        # Chia đoạn thông minh bằng RecursiveCharacterTextSplitter
+        chunks = self._text_splitter.split_text(clean_content)
+        
+        if not chunks:
+            return
+
+        # Tạo embedding text: kết hợp metadata + nội dung chunk để enrichment
+        texts_to_embed = [
+            f"{title} | {category} | {' '.join(tags)} | {chunk}"
+            for chunk in chunks
+        ]
+        
+        # Batch embedding (hiệu quả hơn nhiều so với encode từng câu)
+        vectors = self._embed(texts_to_embed)
+
+        points = []
+        for idx, (chunk, vector) in enumerate(zip(chunks, vectors)):
+            point_id = self._deterministic_point_id(doc_id, idx)
             
             payload = {
                 "doc_id": doc_id,
@@ -90,6 +159,7 @@ class QdrantKBEngine:
             points.append(PointStruct(id=point_id, vector=vector, payload=payload))
 
         self.client.upsert(collection_name=COLLECTION_NAME, points=points)
+        print(f"[Qdrant] Đã upsert {len(points)} chunks cho document [{doc_id}] '{title}'")
 
     def rerank_citations(
         self,
@@ -97,7 +167,12 @@ class QdrantKBEngine:
         citations: List[Dict[str, Any]],
         cohere_api_key: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Tái xếp hạng danh sách trích dẫn bằng Cohere Rerank API."""
+        """Tái xếp hạng danh sách trích dẫn bằng Cohere Rerank API.
+        
+        Cohere Rerank trả về relevance_score từ 0.0 đến 1.0.
+        Score này được giữ nguyên (không scale nhân tạo) để đảm bảo
+        confidence metric phản ánh đúng chất lượng retrieval.
+        """
         api_key = cohere_api_key or settings.COHERE_API_KEY
         if not api_key:
             return citations
@@ -106,7 +181,6 @@ class QdrantKBEngine:
             return citations
 
         try:
-            # Chuẩn bị payload cho Cohere Rerank v1 API
             payload = {
                 "model": settings.COHERE_MODEL,
                 "query": query,
@@ -120,9 +194,6 @@ class QdrantKBEngine:
             }
 
             url = "https://api.cohere.com/v1/rerank"
-            import json
-            import urllib.request
-            import urllib.error
 
             req = urllib.request.Request(
                 url,
@@ -136,18 +207,12 @@ class QdrantKBEngine:
                     resp_data = json.loads(response.read().decode("utf-8"))
                     results = resp_data.get("results", [])
                     
-                    # Cập nhật điểm và ánh xạ lại (Chuẩn hóa Cohere Rerank probability sang Qdrant Cosine scale)
+                    # Cập nhật relevance score trực tiếp từ Cohere (không scale nhân tạo)
                     for item in results:
                         idx = item.get("index")
                         raw_score = float(item.get("relevance_score", 0.0))
                         if 0 <= idx < len(citations):
-                            # Cohere Rerank v3.0 trả về xác suất từ 0.0 đến 1.0 (thường thấp, >=0.1 là rất khớp)
-                            # Chuẩn hóa về thang điểm cosine của Qdrant (thường từ 0.4 đến 0.99)
-                            if raw_score >= 0.1:
-                                scaled_score = 0.4 + raw_score * 0.55
-                            else:
-                                scaled_score = raw_score * 4.0
-                            citations[idx]["relevanceScore"] = round(min(0.99, scaled_score), 2)
+                            citations[idx]["relevanceScore"] = round(raw_score, 4)
                     
                     # Sắp xếp lại theo điểm mới giảm dần
                     citations.sort(key=lambda x: x["relevanceScore"], reverse=True)
@@ -163,10 +228,14 @@ class QdrantKBEngine:
         limit: int = 3,
         cohere_api_key: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Tìm kiếm các đoạn văn bản tương đồng cao nhất từ Qdrant Vector DB."""
-        query_vector = self._simple_embedding(query)
+        """Tìm kiếm các đoạn văn bản tương đồng cao nhất từ Qdrant Vector DB.
         
-        # Nếu dùng Rerank và có API Key, chúng ta kéo nhiều ứng viên hơn từ Qdrant (gấp đôi limit)
+        Sử dụng SentenceTransformer embedding cho truy vấn, sau đó tùy chọn
+        Cohere Rerank để tái xếp hạng kết quả.
+        """
+        query_vector = self._embed_single(query)
+        
+        # Nếu dùng Rerank và có API Key, kéo nhiều ứng viên hơn từ Qdrant (gấp đôi limit)
         effective_api_key = cohere_api_key or settings.COHERE_API_KEY
         use_rerank_active = settings.USE_RERANK and bool(effective_api_key)
         qdrant_limit = limit * 2 if use_rerank_active else limit
@@ -193,23 +262,67 @@ class QdrantKBEngine:
         citations = []
         for res in search_results:
             payload = getattr(res, "payload", {}) or {}
-            score = getattr(res, "score", 0.85)
+            score = getattr(res, "score", 0.0)
             citations.append({
                 "docId": payload.get("doc_id", "KB-UNKNOWN"),
                 "docTitle": payload.get("doc_title", "Tài liệu hệ thống"),
                 "section": payload.get("section", "Phần nội dung"),
                 "snippet": payload.get("snippet", ""),
-                "relevanceScore": round(float(score), 2)
+                "relevanceScore": round(float(score), 4)
             })
 
         # Thực hiện Rerank nếu được kích hoạt
         if use_rerank_active:
-            # Lưu lại điểm gốc Qdrant cho nhật ký nếu cần thiết (không bắt buộc)
             citations = self.rerank_citations(query, citations, cohere_api_key=effective_api_key)
-            # Sau khi Rerank, chỉ giữ lại Top limit tài liệu tốt nhất
-            citations = citations[:limit]
+        
+        # Sau khi Rerank hoặc search, chỉ giữ lại Top limit tài liệu tốt nhất
+        citations = citations[:limit]
 
         return citations
+
+
+def seed_initial_kb(kb_dir: Optional[str] = None):
+    """Đọc toàn bộ file trong thư mục knowledge_base/ và nạp vào Qdrant Vector DB."""
+    if kb_dir is None:
+        kb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "knowledge_base"))
+    
+    if not os.path.exists(kb_dir):
+        print(f"[Qdrant Seed] Thư mục tri thức '{kb_dir}' không tồn tại. Bỏ qua seeding.")
+        return
+
+    cat_map = {
+        "billing": "Thanh toán & Hóa đơn",
+        "emergency": "Quy trình Khẩn cấp",
+        "faq": "Hỏi đáp Thông tin",
+        "technical": "Kỹ thuật & Tích hợp"
+    }
+
+    count = 0
+    for root, _, files in os.walk(kb_dir):
+        for f in files:
+            if f.endswith(".txt"):
+                file_path = os.path.join(root, f)
+                rel_dir = os.path.basename(root)
+                category = cat_map.get(rel_dir, "Hỏi đáp Thông tin")
+                doc_title = os.path.splitext(f)[0].replace("-", " ").title()
+                doc_id = f"KB-FILE-{hash(f) % 9000 + 1000}"
+                
+                try:
+                    with open(file_path, "r", encoding="utf-8") as file_obj:
+                        content = file_obj.read()
+                    
+                    qdrant_kb.upsert_document(
+                        doc_id=doc_id,
+                        title=doc_title,
+                        category=category,
+                        content=content,
+                        tags=[rel_dir, "kb_auto_seed"]
+                    )
+                    count += 1
+                except Exception as err:
+                    print(f"[Qdrant Seed Error] {file_path}: {err}")
+
+    print(f"[Qdrant Seed] Đã nạp thành công {count} tài liệu từ '{kb_dir}' vào Qdrant Vector DB.")
 
 
 # Global Qdrant KB instance

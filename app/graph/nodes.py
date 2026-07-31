@@ -307,8 +307,13 @@ def qdrant_rag_retrieval_node(state: SupportState) -> Dict[str, Any]:
     # Lấy Top limit kết quả tốt nhất
     citations = citations[:settings.RAG_SEARCH_LIMIT]
 
-    best_score = max([c["relevanceScore"] for c in citations], default=0.55)
-    confidence_score = min(98.5, round(best_score * 160, 1)) if best_score > 0.4 else round(best_score * 100, 1)
+    best_score = max([c["relevanceScore"] for c in citations], default=0.0)
+    
+    # Confidence score = phần trăm trung thực từ điểm tương đồng thực tế
+    # - Cosine similarity từ SentenceTransformer: 0.0 → 1.0
+    # - Cohere Rerank probability: 0.0 → 1.0
+    # Chuyển trực tiếp sang phần trăm, không nhân hằng số magic
+    confidence_score = round(best_score * 100, 1)
 
     rerank_status_str = f" (Multi-Query Rerank: {len(queries_to_run)} queries)" if use_rerank else " (Không Rerank)"
     logs.append({

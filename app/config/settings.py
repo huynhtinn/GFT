@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     VECTOR_DIM: int = Field(default=384, description="Vector embedding dimension")
     QDRANT_TIMEOUT_SECONDS: float = Field(default=3.0, description="Qdrant connection timeout")
 
+    # EMBEDDING MODEL SETTINGS
+    EMBEDDING_MODEL_NAME: str = Field(
+        default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        description="SentenceTransformer model for semantic embedding (384 dims, multilingual)"
+    )
+
     # COHERE RERANKER SETTINGS
     COHERE_API_KEY: str = Field(default="", description="Cohere API key")
     COHERE_MODEL: str = Field(default="rerank-multilingual-v3.0", description="Cohere Rerank model name")
@@ -34,7 +40,7 @@ class Settings(BaseSettings):
     RAG_CONFIDENCE_THRESHOLD: float = Field(default=30.0, description="Ngưỡng tin cậy RAG % tối thiểu cho auto-resolve")
     RAG_SEARCH_LIMIT: int = Field(default=3, description="Số lượng trích đoạn tri thức cần lấy")
     RAG_CHUNK_SIZE: int = Field(default=800, description="Kích thước đoạn văn bản (ký tự) khi chia nhỏ tài liệu")
-    RAG_CHUNK_OVERLAP: int = Field(default=50, description="Độ chồng chéo giữa các đoạn (ký tự)")
+    RAG_CHUNK_OVERLAP: int = Field(default=150, description="Độ chồng chéo giữa các đoạn (ký tự) — 15-20% chunk_size để giữ ngữ nghĩa liên tục")
 
 
 @lru_cache
